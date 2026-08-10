@@ -36,13 +36,26 @@
   /* top bar */
   .topbar{display:flex;align-items:center;justify-content:space-between;padding:16px 16px 12px;position:sticky;top:0;z-index:50;
     background:linear-gradient(180deg, rgba(3,5,10,0.95), rgba(3,5,10,0.75) 70%, transparent);backdrop-filter:blur(6px);}
-  .brand-title{font-family:'Chakra Petch',sans-serif;font-weight:700;font-size:18px;letter-spacing:4px;color:var(--sys);text-shadow:0 0 12px rgba(73,180,255,0.6);}
+  .brand-title{font-family:'Chakra Petch',sans-serif;font-weight:700;font-size:18px;letter-spacing:4px;
+    background:linear-gradient(90deg, var(--sys) 0%, #eaf6ff 18%, var(--sys) 36%, var(--sys) 100%);
+    background-size:300% 100%;-webkit-background-clip:text;background-clip:text;color:transparent;
+    filter:drop-shadow(0 0 10px rgba(73,180,255,0.55));animation:titleShimmer 5s linear infinite;}
+  @keyframes titleShimmer{0%{background-position:200% 0}100%{background-position:-100% 0}}
   .brand-sub{font-family:'Share Tech Mono',monospace;font-size:9px;color:var(--text-dim);letter-spacing:2px;}
   .mini-rank{font-family:'Chakra Petch',sans-serif;font-weight:700;font-size:12px;color:var(--gold);border:1px solid var(--gold);padding:2px 9px;letter-spacing:1px;text-shadow:0 0 8px rgba(244,201,93,0.5);}
 
   .tabcontent{padding:6px 14px 14px;}
   .fadein{animation:matIn .35s ease both;}
   @keyframes matIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+  .tabcontent .frame{opacity:0;animation:frameRise .45s cubic-bezier(.2,.8,.2,1) forwards;}
+  .tabcontent .frame:nth-of-type(1){animation-delay:.04s}
+  .tabcontent .frame:nth-of-type(2){animation-delay:.12s}
+  .tabcontent .frame:nth-of-type(3){animation-delay:.20s}
+  .tabcontent .frame:nth-of-type(4){animation-delay:.28s}
+  @keyframes frameRise{0%{opacity:0;transform:translateY(14px) scale(0.985);}100%{opacity:1;transform:translateY(0) scale(1);}}
+  .reward-appear{animation:rewardFlip .4s ease both;}
+  @keyframes rewardFlip{0%{opacity:0;transform:perspective(600px) rotateX(-40deg);}100%{opacity:1;transform:perspective(600px) rotateX(0);}}
+  .lu-particle.gold{background:var(--gold);box-shadow:0 0 6px var(--gold);}
 
   /* frame */
   .frame{position:relative;background:linear-gradient(180deg, var(--panel-2), var(--panel));border:1px solid var(--edge);
@@ -72,7 +85,11 @@
   .lvl-center{text-align:center;font-family:'Share Tech Mono',monospace;font-size:12px;color:var(--text-dim);margin-top:6px;}
   .lvl-center b{color:var(--sys);font-size:17px;}
   .exp-track{height:9px;background:#050a13;border:1px solid var(--edge);position:relative;overflow:hidden;margin-top:10px;}
-  .exp-fill{height:100%;background:linear-gradient(90deg,var(--sys-dim),var(--sys));box-shadow:0 0 10px rgba(73,180,255,0.8);transition:width .5s ease;}
+  .exp-fill{height:100%;background:linear-gradient(90deg,var(--sys-dim),var(--sys));box-shadow:0 0 10px rgba(73,180,255,0.8);transition:width .5s ease;position:relative;overflow:hidden;}
+  .exp-fill::after{content:'';position:absolute;top:0;bottom:0;width:40%;
+    background:linear-gradient(90deg,transparent,rgba(255,255,255,0.55),transparent);
+    animation:expShimmer 2.4s ease-in-out infinite;}
+  @keyframes expShimmer{0%{left:-40%}100%{left:110%}}
   .exp-text{font-family:'Share Tech Mono',monospace;font-size:9px;color:var(--text-dim);margin-top:4px;display:flex;justify-content:space-between;}
   .streak-row{display:flex;justify-content:center;gap:18px;margin-top:12px;font-family:'Share Tech Mono',monospace;font-size:10px;color:var(--text-dim);}
   .streak-row b{color:var(--good);}
@@ -152,6 +169,17 @@
     display:flex;align-items:center;justify-content:center;cursor:pointer;box-shadow:0 0 18px rgba(73,180,255,0.5);z-index:70;font-size:21px;color:var(--sys);
     clip-path:polygon(0 8px,8px 0,100% 0,100% calc(100% - 8px),calc(100% - 8px) 100%,0 100%);}
   #chatFab .dot{position:absolute;top:5px;right:5px;width:8px;height:8px;background:var(--good);border-radius:50%;box-shadow:0 0 6px var(--good);}
+  #settingsFab{position:fixed;bottom:78px;left:16px;width:52px;height:52px;background:var(--panel-2);border:1px solid var(--edge);
+    display:flex;align-items:center;justify-content:center;cursor:pointer;z-index:70;font-size:19px;color:var(--text-dim);
+    clip-path:polygon(0 8px,8px 0,100% 0,100% calc(100% - 8px),calc(100% - 8px) 100%,0 100%);}
+  #settingsOverlay{position:fixed;inset:0;background:rgba(3,5,10,0.97);z-index:900;display:none;flex-direction:column;}
+  #settingsOverlay.show{display:flex;}
+  .settings-body{flex:1;overflow-y:auto;padding:16px;}
+  .settings-item{padding:14px 0;border-bottom:1px solid rgba(28,58,94,0.4);}
+  .settings-item-label{font-family:'Chakra Petch',sans-serif;font-weight:600;font-size:13px;color:var(--text);letter-spacing:1px;margin-bottom:4px;}
+  .settings-item-desc{font-family:'Share Tech Mono',monospace;font-size:10px;color:var(--text-dim);line-height:1.5;margin-bottom:10px;}
+  .dangerBtn{background:rgba(255,77,94,0.1);border:1px solid var(--danger);color:var(--danger);font-family:'Chakra Petch',sans-serif;font-weight:700;
+    padding:10px 18px;cursor:pointer;font-size:12px;letter-spacing:1.5px;width:100%;}
   #chatOverlay{position:fixed;inset:0;background:rgba(3,5,10,0.97);z-index:900;display:none;flex-direction:column;}
   #chatOverlay.show{display:flex;}
   .chat-head{display:flex;align-items:center;justify-content:space-between;padding:16px 16px 12px;border-bottom:1px solid var(--edge);}
@@ -257,6 +285,29 @@
 </div>
 
 <div id="chatFab" onclick="openChat()"><div class="dot"></div>💬</div>
+<div id="settingsFab" onclick="openSettings()">☰</div>
+
+<div id="settingsOverlay">
+  <div class="chat-head">
+    <div><div class="chat-head-title">SETTINGS</div><div class="chat-head-sub" style="color:var(--text-dim);">SYSTEM CONFIGURATION</div></div>
+    <button class="closeChat" onclick="closeSettings()">×</button>
+  </div>
+  <div class="settings-body">
+    <div class="settings-item">
+      <div class="settings-item-label">HUNTER NAME</div>
+      <div class="settings-item-desc">Change from the Status tab by tapping your name directly.</div>
+    </div>
+    <div class="settings-item">
+      <div class="settings-item-label">ABOUT</div>
+      <div class="settings-item-desc">THE SYSTEM v1.0 — a daily quest, planner, and reward tracker. All data is stored only on this device.</div>
+    </div>
+    <div class="settings-item">
+      <div class="settings-item-label">⚠ REBOOT SYSTEM</div>
+      <div class="settings-item-desc">Permanently erases your level, EXP, streak, rewards, redemption log, and daily history. Quests and planner reset to default. This cannot be undone.</div>
+      <button class="dangerBtn" onclick="rebootSystem()">REBOOT — ERASE ALL DATA</button>
+    </div>
+  </div>
+</div>
 
 <div class="bottomnav">
   <button class="navbtn" data-tab="status" onclick="switchTab('status')"><span class="ic">◈</span>STATUS</button>
@@ -311,7 +362,7 @@ const ACHIEVEMENTS = [
 ];
 
 let state = {
-  player: {name:'Hunter', level:1, exp:0, expToNext:100, streak:0, rewardPoints:0, rewards: JSON.parse(JSON.stringify(DEFAULT_REWARDS)), redemptions:[], unlocked:[]},
+  player: {name:'Hunter', level:1, exp:0, expToNext:100, streak:0, rewardPoints:0, rewards: JSON.parse(JSON.stringify(DEFAULT_REWARDS)), activeRewardIds:[], redemptions:[], unlocked:[]},
   daily: {date: todayStr(), items: JSON.parse(JSON.stringify(DEFAULT_QUESTS)).map(q=>({...q, current:0})), bonusGiven:false},
   planner: [],
   history: {}
@@ -510,15 +561,42 @@ function togglePlanner(id){
 }
 function deletePlanner(id){ state.planner = state.planner.filter(x=>x.id!==id); saveAll(); renderTab(); }
 
-function redeemReward(id){
-  const r = state.player.rewards.find(x=>x.id===id);
-  if(!r || state.player.rewardPoints < r.cost) return;
-  state.player.rewardPoints -= r.cost;
-  state.player.redemptions.unshift({name:r.name, date: todayStr(), ts: Date.now()});
-  state.player.redemptions = state.player.redemptions.slice(0,20);
+const ACTIVE_REWARD_SLOTS = 3;
+function pickRandomRewardIds(n, excludeIds){
+  const pool = state.player.rewards.filter(r=>!excludeIds.includes(r.id));
+  const shuffled = pool.sort(()=>Math.random()-0.5);
+  return shuffled.slice(0,n).map(r=>r.id);
+}
+function getActiveRewards(){
+  const p = state.player;
+  if(!p.activeRewardIds) p.activeRewardIds = [];
+  p.activeRewardIds = p.activeRewardIds.filter(id=>p.rewards.find(r=>r.id===id));
+  const target = Math.min(ACTIVE_REWARD_SLOTS, p.rewards.length);
+  while(p.activeRewardIds.length < target){
+    const next = pickRandomRewardIds(1, p.activeRewardIds)[0];
+    if(next) p.activeRewardIds.push(next); else break;
+  }
+  return p.activeRewardIds.map(id=>p.rewards.find(r=>r.id===id)).filter(Boolean);
+}
+function rerollAfterRemoval(removedId){
+  const p = state.player;
+  p.activeRewardIds = (p.activeRewardIds||[]).filter(id=>id!==removedId);
+  const next = pickRandomRewardIds(1, p.activeRewardIds)[0];
+  if(next) p.activeRewardIds.push(next);
+}
+
+function redeemReward(id, evt){
+  const p = state.player;
+  const r = p.rewards.find(x=>x.id===id);
+  if(!r || p.rewardPoints < r.cost) return;
+  p.rewardPoints -= r.cost;
+  p.redemptions.unshift({name:r.name, date: todayStr(), ts: Date.now()});
+  p.redemptions = p.redemptions.slice(0,20);
+  rerollAfterRemoval(id);
   showToast(`REDEEMED — ${r.name}`);
   vibrate(100);
   saveAll(); renderTab();
+  spawnRewardBurst();
 }
 function addReward(){
   const nameInput = document.getElementById('rewardNameInput');
@@ -526,13 +604,50 @@ function addReward(){
   const name = nameInput.value.trim();
   const cost = parseInt(costInput.value, 10);
   if(!name || !cost || cost<=0) return;
-  state.player.rewards.push({id:'r'+Date.now(), name, cost, custom:true});
+  const newReward = {id:'r'+Date.now(), name, cost, custom:true};
+  state.player.rewards.push(newReward);
+  if(state.player.activeRewardIds.length < ACTIVE_REWARD_SLOTS){
+    state.player.activeRewardIds.push(newReward.id);
+  }
   nameInput.value=''; costInput.value='';
   saveAll(); renderTab();
 }
 function deleteReward(id){
   state.player.rewards = state.player.rewards.filter(r=>r.id!==id);
+  state.player.activeRewardIds = (state.player.activeRewardIds||[]).filter(x=>x!==id);
   saveAll(); renderTab();
+}
+function spawnRewardBurst(){
+  const wrap = document.querySelector('.reward-shop-frame');
+  if(!wrap) return;
+  for(let i=0;i<14;i++){
+    const p = document.createElement('div');
+    p.className = 'lu-particle gold';
+    const angle = Math.random()*Math.PI*2;
+    const dist = 40 + Math.random()*50;
+    p.style.left = '50%'; p.style.top = '20px';
+    p.style.setProperty('--dx', (Math.cos(angle)*dist)+'px');
+    p.style.setProperty('--dy', (Math.sin(angle)*dist)+'px');
+    wrap.appendChild(p);
+    setTimeout(()=>p.remove(), 900);
+  }
+}
+
+/* ============ REBOOT ============ */
+function rebootSystem(){
+  if(!confirm('This will permanently erase your level, EXP, streak, rewards, and history. This cannot be undone. Reboot the System?')) return;
+  try{ localStorage.removeItem('sys-player'); }catch(e){}
+  try{ localStorage.removeItem('sys-daily'); }catch(e){}
+  try{ localStorage.removeItem('sys-planner'); }catch(e){}
+  try{ localStorage.removeItem('sys-history'); }catch(e){}
+  state.player = {name:'Hunter', level:1, exp:0, expToNext:100, streak:0, rewardPoints:0, rewards: JSON.parse(JSON.stringify(DEFAULT_REWARDS)), activeRewardIds:[], redemptions:[], unlocked:[]};
+  state.daily = {date: todayStr(), items: JSON.parse(JSON.stringify(DEFAULT_QUESTS)).map(q=>({...q, current:0})), bonusGiven:false};
+  state.planner = [];
+  state.history = {};
+  saveAll();
+  closeSettings();
+  switchTab('status');
+  showToast('SYSTEM REBOOTED');
 }
 
 function voiceLine(){
@@ -578,9 +693,10 @@ function renderStatus(){
   const p = state.player;
   const expPct = Math.min(100, (p.exp/p.expToNext)*100);
 
-  const rewardRows = p.rewards.map(r=>{
+  const activeRewards = getActiveRewards();
+  const rewardRows = activeRewards.map(r=>{
     const affordable = p.rewardPoints >= r.cost;
-    return `<div class="reward-row">
+    return `<div class="reward-row reward-appear">
       <div class="reward-body">
         <div class="reward-name">${escapeHtml(r.name)}</div>
         <div class="reward-cost">${r.cost} RP</div>
@@ -609,8 +725,8 @@ function renderStatus(){
       <div class="exp-text"><span>EXP</span><span>${p.exp} / ${p.expToNext}</span></div>
       <div class="streak-row"><span>STREAK: <b>${p.streak}</b> DAYS</span><span>RANK: <b style="color:var(--gold)">${rankFor(p.level)}</b></span></div>
     </div>
-    <div class="frame">
-      <div class="frame-label">REWARDS SHOP <span class="tag">${p.rewardPoints} RP AVAILABLE</span></div>
+    <div class="frame reward-shop-frame">
+      <div class="frame-label">REWARDS SHOP <span class="tag">${p.rewardPoints} RP · ${activeRewards.length}/${p.rewards.length} SHOWN</span></div>
       ${rewardRows}
       <div class="add-row" style="margin-top:12px;">
         <input id="rewardNameInput" placeholder="Custom reward..." style="flex:1.4;background:var(--void);border:1px solid var(--edge);color:var(--text);padding:9px 10px;font-family:'Rajdhani',sans-serif;font-size:13px;outline:none;" />
@@ -775,6 +891,8 @@ function openChat(){
   if(apiHistory.length===0) pushMsg('sys', `Connection established. I am the System. Ask about your quests, stats, or say what's on your mind, ${state.player.name}.`);
 }
 function closeChat(){ document.getElementById('chatOverlay').classList.remove('show'); }
+function openSettings(){ document.getElementById('settingsOverlay').classList.add('show'); }
+function closeSettings(){ document.getElementById('settingsOverlay').classList.remove('show'); }
 function pushMsg(who, text){
   const log = document.getElementById('chatLog');
   const div = document.createElement('div');
