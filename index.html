@@ -1,0 +1,917 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>THE SYSTEM</title>
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#03050a">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="System">
+<link rel="apple-touch-icon" href="icon-192.png">
+<link rel="icon" href="icon-192.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@400;500;600;700&family=Rajdhani:wght@500;600;700&family=Share+Tech+Mono&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --void:#03050a; --panel:#0a1120cc; --panel-2:#0d1730cc; --edge:#1c3a5e;
+    --sys:#49b4ff; --sys-dim:#2a6a99; --gold:#f4c95d; --text:#d9e6f5; --text-dim:#7891ac;
+    --danger:#ff4d5e; --good:#3ddc84; --purple:#a06bff;
+  }
+  *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
+  html,body{background:var(--void);color:var(--text);font-family:'Rajdhani',sans-serif;min-height:100vh;overflow-x:hidden;}
+  #bgCanvas{position:fixed;inset:0;z-index:0;}
+  .shell{position:relative;z-index:1;max-width:520px;margin:0 auto;min-height:100vh;padding-bottom:96px;}
+
+  /* boot */
+  #boot{position:fixed;inset:0;background:#000;z-index:1000;display:flex;align-items:center;justify-content:center;flex-direction:column;padding:30px;}
+  #boot.hide{display:none;}
+  #bootLines{font-family:'Share Tech Mono',monospace;font-size:13px;color:var(--sys);line-height:1.9;max-width:420px;white-space:pre-wrap;text-shadow:0 0 8px rgba(73,180,255,0.5);}
+  #bootTap{margin-top:26px;font-family:'Share Tech Mono',monospace;font-size:10px;color:var(--text-dim);letter-spacing:2px;opacity:0;transition:opacity .5s;}
+  #bootTap.show{opacity:1;}
+  .cursor{display:inline-block;width:8px;height:14px;background:var(--sys);animation:blink 1s step-end infinite;vertical-align:middle;margin-left:2px;}
+  @keyframes blink{50%{opacity:0}}
+
+  /* top bar */
+  .topbar{display:flex;align-items:center;justify-content:space-between;padding:16px 16px 12px;position:sticky;top:0;z-index:50;
+    background:linear-gradient(180deg, rgba(3,5,10,0.95), rgba(3,5,10,0.75) 70%, transparent);backdrop-filter:blur(6px);}
+  .brand-title{font-family:'Chakra Petch',sans-serif;font-weight:700;font-size:18px;letter-spacing:4px;color:var(--sys);text-shadow:0 0 12px rgba(73,180,255,0.6);}
+  .brand-sub{font-family:'Share Tech Mono',monospace;font-size:9px;color:var(--text-dim);letter-spacing:2px;}
+  .mini-rank{font-family:'Chakra Petch',sans-serif;font-weight:700;font-size:12px;color:var(--gold);border:1px solid var(--gold);padding:2px 9px;letter-spacing:1px;text-shadow:0 0 8px rgba(244,201,93,0.5);}
+
+  .tabcontent{padding:6px 14px 14px;}
+  .fadein{animation:matIn .35s ease both;}
+  @keyframes matIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+
+  /* frame */
+  .frame{position:relative;background:linear-gradient(180deg, var(--panel-2), var(--panel));border:1px solid var(--edge);
+    padding:16px 16px 14px;margin-bottom:14px;backdrop-filter:blur(8px);
+    clip-path:polygon(0 8px,8px 0,100% 0,100% calc(100% - 8px),calc(100% - 8px) 100%,0 100%);}
+  .frame::before,.frame::after{content:'';position:absolute;width:14px;height:14px;pointer-events:none;}
+  .frame::before{top:-1px;left:-1px;border-top:2px solid var(--sys);border-left:2px solid var(--sys);}
+  .frame::after{bottom:-1px;right:-1px;border-bottom:2px solid var(--sys);border-right:2px solid var(--sys);}
+  .frame-label{font-family:'Chakra Petch',sans-serif;font-weight:600;font-size:11px;letter-spacing:3px;color:var(--sys);
+    text-transform:uppercase;margin-bottom:12px;display:flex;align-items:center;gap:8px;}
+  .frame-label::before{content:'◆';font-size:9px;}
+  .frame-label .tag{margin-left:auto;font-family:'Share Tech Mono',monospace;font-size:9px;color:var(--text-dim);letter-spacing:1px;}
+
+  /* status tab */
+  .avatar-ring{width:84px;height:84px;border-radius:50%;margin:0 auto 14px;position:relative;display:flex;align-items:center;justify-content:center;}
+  .avatar-ring::before,.avatar-ring::after{content:'';position:absolute;inset:0;border-radius:50%;border:2px solid var(--sys-dim);}
+  .avatar-ring::before{animation:spin 12s linear infinite;border-top-color:var(--sys);border-right-color:var(--sys);}
+  .avatar-ring::after{inset:8px;border:1px solid var(--edge);}
+  .avatar-glyph{font-family:'Chakra Petch',sans-serif;font-weight:700;font-size:22px;color:var(--sys);text-shadow:0 0 14px rgba(73,180,255,0.8);}
+  @keyframes spin{to{transform:rotate(360deg)}}
+
+  .name-row{display:flex;align-items:baseline;gap:8px;justify-content:center;}
+  #playerName{font-family:'Chakra Petch',sans-serif;font-weight:600;font-size:19px;background:transparent;border:none;color:var(--text);
+    width:170px;outline:none;text-align:center;border-bottom:1px dashed transparent;}
+  #playerName:focus{border-bottom:1px dashed var(--sys);}
+  .title-chip{display:block;text-align:center;font-family:'Share Tech Mono',monospace;font-size:10px;color:var(--gold);letter-spacing:2px;margin-top:4px;}
+  .lvl-center{text-align:center;font-family:'Share Tech Mono',monospace;font-size:12px;color:var(--text-dim);margin-top:6px;}
+  .lvl-center b{color:var(--sys);font-size:17px;}
+  .exp-track{height:9px;background:#050a13;border:1px solid var(--edge);position:relative;overflow:hidden;margin-top:10px;}
+  .exp-fill{height:100%;background:linear-gradient(90deg,var(--sys-dim),var(--sys));box-shadow:0 0 10px rgba(73,180,255,0.8);transition:width .5s ease;}
+  .exp-text{font-family:'Share Tech Mono',monospace;font-size:9px;color:var(--text-dim);margin-top:4px;display:flex;justify-content:space-between;}
+  .streak-row{display:flex;justify-content:center;gap:18px;margin-top:12px;font-family:'Share Tech Mono',monospace;font-size:10px;color:var(--text-dim);}
+  .streak-row b{color:var(--good);}
+
+  .reward-row{display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid rgba(28,58,94,0.4);}
+  .reward-row:last-child{border-bottom:none;}
+  .reward-body{flex:1;min-width:0;}
+  .reward-name{font-weight:600;font-size:14px;color:var(--text);}
+  .reward-cost{font-family:'Share Tech Mono',monospace;font-size:10px;color:var(--gold);margin-top:2px;}
+  .claimBtn{background:var(--sys-dim);border:1px solid var(--sys);color:var(--void);font-family:'Chakra Petch',sans-serif;font-weight:700;padding:6px 12px;cursor:pointer;font-size:11px;letter-spacing:1px;flex-shrink:0;}
+  .claimBtn:disabled{background:transparent;border-color:var(--edge);color:var(--text-dim);cursor:default;opacity:0.5;}
+  .redemption-row{display:flex;justify-content:space-between;padding:7px 0;border-bottom:1px solid rgba(28,58,94,0.3);font-size:13px;font-weight:600;}
+  .redemption-row:last-child{border-bottom:none;}
+  .redemption-date{font-family:'Share Tech Mono',monospace;font-size:10px;color:var(--text-dim);font-weight:400;}
+
+  .badges-row{display:flex;flex-wrap:wrap;gap:6px;margin-top:2px;}
+  .badge{font-family:'Share Tech Mono',monospace;font-size:9px;color:var(--gold);border:1px solid var(--gold);padding:3px 8px;letter-spacing:0.5px;}
+  .badge.locked{color:var(--text-dim);border-color:var(--edge);opacity:0.5;}
+
+  /* quest tab */
+  .voice-line{font-family:'Share Tech Mono',monospace;font-size:11px;color:var(--sys);line-height:1.6;border-left:2px solid var(--sys-dim);padding-left:10px;min-height:34px;}
+  .quest{display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid rgba(28,58,94,0.5);transition:.3s;}
+  .quest:last-child{border-bottom:none;}
+  .quest.burst{animation:burst .5s ease;}
+  @keyframes burst{0%{background:rgba(73,180,255,0.25)}100%{background:transparent}}
+  .check{width:22px;height:22px;border:1.5px solid var(--sys-dim);flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:13px;color:transparent;}
+  .check.done{background:var(--sys);border-color:var(--sys);color:var(--void);box-shadow:0 0 10px rgba(73,180,255,0.7);}
+  .qbody{flex:1;min-width:0;}
+  .qname{font-weight:600;font-size:15px;color:var(--text);}
+  .qname.done{color:var(--text-dim);text-decoration:line-through;}
+  .qmeta{font-family:'Share Tech Mono',monospace;font-size:10px;color:var(--text-dim);margin-top:2px;}
+  .stepper{display:flex;align-items:center;gap:8px;font-family:'Share Tech Mono',monospace;}
+  .stepper button{width:26px;height:26px;background:var(--panel-2);border:1px solid var(--edge);color:var(--sys);font-size:15px;cursor:pointer;}
+  .stepper button:active{background:var(--sys-dim);}
+  .stepper .count{font-size:13px;min-width:54px;text-align:center;color:var(--text);}
+  .quest-footer{margin-top:12px;padding-top:10px;border-top:1px dashed var(--edge);font-family:'Share Tech Mono',monospace;font-size:10px;color:var(--danger);letter-spacing:0.5px;}
+  .quest-footer.complete{color:var(--good);}
+
+  /* planner tab */
+  .add-row{display:flex;gap:8px;margin-bottom:12px;}
+  #plannerInput{flex:1;background:var(--void);border:1px solid var(--edge);color:var(--text);padding:9px 10px;font-family:'Rajdhani',sans-serif;font-size:14px;outline:none;}
+  #plannerInput:focus{border-color:var(--sys);}
+  #catSelect{background:var(--void);border:1px solid var(--edge);color:var(--text-dim);padding:0 8px;font-family:'Share Tech Mono',monospace;font-size:10px;}
+  .addBtn{background:var(--sys-dim);border:1px solid var(--sys);color:var(--void);font-family:'Chakra Petch',sans-serif;font-weight:600;padding:0 16px;cursor:pointer;font-size:13px;letter-spacing:1px;}
+  .planner-item{display:flex;align-items:center;gap:10px;padding:9px 0;border-bottom:1px solid rgba(28,58,94,0.4);}
+  .planner-item:last-child{border-bottom:none;}
+  .cat-dot{width:7px;height:7px;flex-shrink:0;border-radius:50%;}
+  .cat-study{background:var(--sys);} .cat-exercise{background:var(--gold);} .cat-personal{background:var(--good);}
+  .ptext{flex:1;font-size:14px;font-weight:600;cursor:pointer;}
+  .ptext.done{color:var(--text-dim);text-decoration:line-through;}
+  .delBtn{background:none;border:none;color:var(--text-dim);font-size:16px;cursor:pointer;padding:2px 6px;}
+  .empty{font-family:'Share Tech Mono',monospace;font-size:11px;color:var(--text-dim);text-align:center;padding:14px 0;}
+
+  /* log tab */
+  #chartCanvas{width:100%;height:120px;display:block;}
+  .chart-labels{display:flex;justify-content:space-between;font-family:'Share Tech Mono',monospace;font-size:9px;color:var(--text-dim);margin-top:4px;}
+  .hist-row{padding:10px 0;border-bottom:1px solid rgba(28,58,94,0.4);}
+  .hist-row:last-child{border-bottom:none;}
+  .hist-date{font-family:'Chakra Petch',sans-serif;font-weight:600;font-size:12px;color:var(--text);letter-spacing:1px;margin-bottom:6px;}
+  .hist-chips{display:flex;flex-wrap:wrap;gap:5px;margin-bottom:5px;}
+  .hist-chip{font-family:'Share Tech Mono',monospace;font-size:9px;padding:2px 7px;border:1px solid var(--edge);}
+  .hist-chip.ok{color:var(--good);border-color:var(--good);}
+  .hist-chip.no{color:var(--danger);border-color:var(--danger);}
+  .hist-planner{font-family:'Share Tech Mono',monospace;font-size:9px;color:var(--text-dim);}
+
+  /* bottom nav */
+  .bottomnav{position:fixed;bottom:0;left:0;right:0;z-index:60;background:rgba(6,10,18,0.92);border-top:1px solid var(--edge);
+    backdrop-filter:blur(10px);display:flex;max-width:520px;margin:0 auto;}
+  .navbtn{flex:1;padding:11px 0 9px;text-align:center;background:none;border:none;color:var(--text-dim);cursor:pointer;
+    font-family:'Chakra Petch',sans-serif;font-size:10px;letter-spacing:1.5px;display:flex;flex-direction:column;align-items:center;gap:3px;}
+  .navbtn .ic{font-size:17px;}
+  .navbtn.active{color:var(--sys);text-shadow:0 0 8px rgba(73,180,255,0.6);}
+  .navbtn.active .ic{filter:drop-shadow(0 0 6px rgba(73,180,255,0.8));}
+
+  /* chat FAB + overlay */
+  #chatFab{position:fixed;bottom:78px;right:16px;width:52px;height:52px;background:var(--panel-2);border:1px solid var(--sys);
+    display:flex;align-items:center;justify-content:center;cursor:pointer;box-shadow:0 0 18px rgba(73,180,255,0.5);z-index:70;font-size:21px;color:var(--sys);
+    clip-path:polygon(0 8px,8px 0,100% 0,100% calc(100% - 8px),calc(100% - 8px) 100%,0 100%);}
+  #chatFab .dot{position:absolute;top:5px;right:5px;width:8px;height:8px;background:var(--good);border-radius:50%;box-shadow:0 0 6px var(--good);}
+  #chatOverlay{position:fixed;inset:0;background:rgba(3,5,10,0.97);z-index:900;display:none;flex-direction:column;}
+  #chatOverlay.show{display:flex;}
+  .chat-head{display:flex;align-items:center;justify-content:space-between;padding:16px 16px 12px;border-bottom:1px solid var(--edge);}
+  .chat-head-title{font-family:'Chakra Petch',sans-serif;font-weight:700;font-size:15px;color:var(--sys);letter-spacing:2px;}
+  .chat-head-sub{font-family:'Share Tech Mono',monospace;font-size:9px;color:var(--good);letter-spacing:1px;}
+  .closeChat{background:none;border:1px solid var(--edge);color:var(--text-dim);width:30px;height:30px;font-size:16px;cursor:pointer;}
+  #chatLog{flex:1;overflow-y:auto;padding:16px;display:flex;flex-direction:column;gap:12px;}
+  .msg{max-width:82%;font-size:14px;line-height:1.5;padding:10px 12px;font-family:'Rajdhani',sans-serif;font-weight:600;}
+  .msg.sys{align-self:flex-start;background:var(--panel-2);border:1px solid var(--sys-dim);color:var(--text);border-left:2px solid var(--sys);}
+  .msg.sys.typing{color:var(--text-dim);font-style:italic;}
+  .msg.user{align-self:flex-end;background:var(--panel);border:1px solid var(--edge);color:var(--text-dim);}
+  .chat-input-row{display:flex;gap:8px;padding:12px 16px 20px;border-top:1px solid var(--edge);}
+  #chatInput{flex:1;background:var(--void);border:1px solid var(--edge);color:var(--text);padding:11px 12px;font-family:'Rajdhani',sans-serif;font-size:15px;outline:none;}
+  #chatInput:focus{border-color:var(--sys);}
+  .sendBtn{background:var(--sys-dim);border:1px solid var(--sys);color:var(--void);font-family:'Chakra Petch',sans-serif;font-weight:600;padding:0 18px;cursor:pointer;font-size:13px;}
+
+  /* level up cinematic */
+  #levelup{position:fixed;inset:0;background:rgba(3,5,10,0.94);display:none;align-items:center;justify-content:center;z-index:999;flex-direction:column;}
+  #levelup.show{display:flex;animation:fadein .3s ease;}
+  .lu-rings{position:relative;width:200px;height:200px;display:flex;align-items:center;justify-content:center;margin-bottom:8px;}
+  .lu-ring{position:absolute;border:1.5px solid var(--sys);border-radius:50%;opacity:0;animation:ringpulse 1.8s ease-out infinite;}
+  .lu-ring:nth-child(1){width:60px;height:60px;animation-delay:0s;}
+  .lu-ring:nth-child(2){width:60px;height:60px;animation-delay:.4s;}
+  .lu-ring:nth-child(3){width:60px;height:60px;animation-delay:.8s;}
+  @keyframes ringpulse{0%{width:60px;height:60px;opacity:0.9;}100%{width:220px;height:220px;opacity:0;}}
+  .lu-text{font-family:'Chakra Petch',sans-serif;font-weight:700;font-size:38px;color:var(--sys);letter-spacing:6px;text-shadow:0 0 30px rgba(73,180,255,0.9);position:relative;z-index:2;animation:pulse 1s ease infinite;}
+  .lu-sub{font-family:'Share Tech Mono',monospace;color:var(--gold);font-size:14px;margin-top:14px;letter-spacing:3px;}
+  .lu-points{font-family:'Share Tech Mono',monospace;color:var(--good);font-size:11px;margin-top:8px;letter-spacing:1px;}
+  @keyframes fadein{from{opacity:0}to{opacity:1}}
+  @keyframes pulse{0%,100%{transform:scale(1)}50%{transform:scale(1.06)}}
+
+  #toast{position:fixed;bottom:140px;left:50%;transform:translateX(-50%) translateY(20px);background:var(--panel-2);border:1px solid var(--sys);color:var(--sys);
+    font-family:'Share Tech Mono',monospace;font-size:11px;padding:10px 18px;letter-spacing:1px;opacity:0;transition:.3s;z-index:998;white-space:nowrap;}
+  #toast.show{opacity:1;transform:translateX(-50%) translateY(0);}
+  .storage-note{font-family:'Share Tech Mono',monospace;font-size:9px;color:var(--text-dim);text-align:center;padding:10px 20px 0;letter-spacing:0.5px;line-height:1.6;}
+
+  /* ---- tactile press feedback ---- */
+  button, .check, .navbtn, .claimBtn, .planner-item, .stepper button{transition:transform .12s ease;}
+  button:active, .check:active, .navbtn:active, .claimBtn:active{transform:scale(0.92);}
+
+  /* ---- ambient scanline sweep (hologram feel) ---- */
+  #scanline{position:fixed;inset:0;pointer-events:none;z-index:400;mix-blend-mode:screen;overflow:hidden;}
+  #scanline::before{
+    content:'';position:absolute;left:0;right:0;height:120px;
+    background:linear-gradient(180deg, transparent, rgba(73,180,255,0.05) 45%, rgba(73,180,255,0.09) 50%, rgba(73,180,255,0.05) 55%, transparent);
+    animation:scandown 7s linear infinite;
+  }
+  @keyframes scandown{0%{top:-120px}100%{top:100vh}}
+
+  /* ---- glitch tab transition ---- */
+  .glitch-in{animation:glitchIn .32s ease both;}
+  @keyframes glitchIn{
+    0%{opacity:0;transform:translateY(6px);filter:blur(2px);}
+    15%{opacity:0.7;transform:translateX(-2px);text-shadow:2px 0 var(--sys),-2px 0 var(--danger);}
+    30%{transform:translateX(2px);text-shadow:none;}
+    50%{opacity:1;transform:translateX(0);filter:blur(0);}
+    100%{opacity:1;transform:translateY(0);}
+  }
+
+  /* ---- typewriter cursor for system voice ---- */
+  .voice-line .tw-cursor{display:inline-block;width:6px;height:12px;background:var(--sys);animation:blink .8s step-end infinite;vertical-align:middle;margin-left:2px;}
+
+  /* ---- boot loading bar ---- */
+  #bootBarWrap{width:280px;height:4px;background:#0a1120;border:1px solid var(--edge);margin-top:20px;overflow:hidden;}
+  #bootBar{height:100%;width:0%;background:linear-gradient(90deg,var(--sys-dim),var(--sys));box-shadow:0 0 8px rgba(73,180,255,0.8);transition:width .15s linear;}
+  #bootPct{font-family:'Share Tech Mono',monospace;font-size:10px;color:var(--text-dim);margin-top:8px;letter-spacing:2px;}
+
+  /* ---- level-up particle burst ---- */
+  .lu-particle{position:absolute;width:4px;height:4px;background:var(--sys);border-radius:50%;left:50%;top:50%;
+    box-shadow:0 0 6px var(--sys);animation:burstOut 0.9s ease-out forwards;}
+  @keyframes burstOut{
+    0%{transform:translate(-50%,-50%) translate(0,0) scale(1);opacity:1;}
+    100%{transform:translate(-50%,-50%) translate(var(--dx),var(--dy)) scale(0.2);opacity:0;}
+  }
+
+  /* ---- quest complete ping ---- */
+  .check.ping{position:relative;}
+  .check.ping::after{content:'';position:absolute;inset:-4px;border:1.5px solid var(--sys);border-radius:2px;animation:pingOut .5s ease-out forwards;}
+  @keyframes pingOut{0%{opacity:1;transform:scale(1);}100%{opacity:0;transform:scale(1.8);}}
+</style>
+</head>
+<body>
+
+<canvas id="bgCanvas"></canvas>
+<div id="scanline"></div>
+
+<div id="boot">
+  <div id="bootLines"></div>
+  <div id="bootBarWrap"><div id="bootBar"></div></div>
+  <div id="bootPct">0%</div>
+  <div id="bootTap">TAP ANYWHERE TO CONTINUE</div>
+</div>
+
+<div class="shell">
+  <div class="topbar">
+    <div>
+      <div class="brand-title">THE SYSTEM</div>
+      <div class="brand-sub" id="topSub">DAILY OPERATIONS INTERFACE</div>
+    </div>
+    <div class="mini-rank" id="topRank">E-RANK</div>
+  </div>
+  <div class="tabcontent fadein" id="tabContent"></div>
+</div>
+
+<div id="chatFab" onclick="openChat()"><div class="dot"></div>💬</div>
+
+<div class="bottomnav">
+  <button class="navbtn" data-tab="status" onclick="switchTab('status')"><span class="ic">◈</span>STATUS</button>
+  <button class="navbtn" data-tab="quest" onclick="switchTab('quest')"><span class="ic">⚔</span>QUEST</button>
+  <button class="navbtn" data-tab="planner" onclick="switchTab('planner')"><span class="ic">☰</span>PLAN</button>
+  <button class="navbtn" data-tab="log" onclick="switchTab('log')"><span class="ic">◔</span>LOG</button>
+</div>
+
+<div id="chatOverlay">
+  <div class="chat-head">
+    <div><div class="chat-head-title">SYSTEM</div><div class="chat-head-sub">● ONLINE — LIVE AI</div></div>
+    <button class="closeChat" onclick="closeChat()">×</button>
+  </div>
+  <div id="chatLog"></div>
+  <div class="chat-input-row">
+    <input id="chatInput" placeholder="Speak to the System..." onkeydown="if(event.key==='Enter')sendChat()" />
+    <button class="sendBtn" onclick="sendChat()">SEND</button>
+  </div>
+</div>
+
+<div id="levelup">
+  <div class="lu-rings"><div class="lu-ring"></div><div class="lu-ring"></div><div class="lu-ring"></div><div class="lu-text">LEVEL UP</div></div>
+  <div class="lu-sub" id="luSub">LV. 2 REACHED</div>
+  <div class="lu-points" id="luPoints">+3 STAT POINTS AWARDED</div>
+</div>
+<div id="toast"></div>
+
+<script>
+/* ============ CONFIG ============ */
+const todayStr = () => new Date().toISOString().slice(0,10);
+const DEFAULT_QUESTS = [
+  {id:'pushups', name:'Push-ups', target:50, unit:'reps', step:5, xp:15},
+  {id:'situps', name:'Sit-ups', target:50, unit:'reps', step:5, xp:15},
+  {id:'squats', name:'Squats', target:50, unit:'reps', step:5, xp:15},
+  {id:'run', name:'Run', target:3, unit:'km', step:0.5, xp:20},
+];
+const DEFAULT_REWARDS = [
+  {id:'rw1', name:'Shawarma', cost:10, custom:false},
+  {id:'rw2', name:'Bike Ride', cost:15, custom:false},
+  {id:'rw3', name:'Movie Night', cost:20, custom:false},
+  {id:'rw4', name:'Gaming Session (1hr)', cost:12, custom:false},
+  {id:'rw5', name:'YouTube Break (30min)', cost:6, custom:false},
+  {id:'rw6', name:'Sleep In Tomorrow', cost:18, custom:false},
+];
+const ACHIEVEMENTS = [
+  {id:'lv5', label:'AWAKENED', check:s=>s.player.level>=5},
+  {id:'lv10', label:'IRON WILL', check:s=>s.player.level>=10},
+  {id:'lv20', label:'ASCENDANT', check:s=>s.player.level>=20},
+  {id:'str3', label:'STREAK x3', check:s=>s.player.streak>=3},
+  {id:'str7', label:'UNBROKEN', check:s=>s.player.streak>=7},
+  {id:'str30', label:"MONARCH'S WILL", check:s=>s.player.streak>=30},
+];
+
+let state = {
+  player: {name:'Hunter', level:1, exp:0, expToNext:100, streak:0, rewardPoints:0, rewards: JSON.parse(JSON.stringify(DEFAULT_REWARDS)), redemptions:[], unlocked:[]},
+  daily: {date: todayStr(), items: JSON.parse(JSON.stringify(DEFAULT_QUESTS)).map(q=>({...q, current:0})), bonusGiven:false},
+  planner: [],
+  history: {}
+};
+let activeTab = 'status';
+let storageWorks = true;
+let memFallback = {};
+
+/* ============ STORAGE ============ */
+function storeGet(key){ try{ return localStorage.getItem(key); }catch(e){ storageWorks=false; return memFallback[key]||null; } }
+function storeSet(key, val){ try{ localStorage.setItem(key, val); }catch(e){ storageWorks=false; memFallback[key]=val; } }
+
+function loadState(){
+  const p = storeGet('sys-player'); if(p) state.player = {...state.player, ...JSON.parse(p)};
+  const d = storeGet('sys-daily'); if(d) state.daily = JSON.parse(d);
+  const pl = storeGet('sys-planner'); if(pl) state.planner = JSON.parse(pl);
+  const h = storeGet('sys-history'); if(h) state.history = JSON.parse(h);
+
+  if(state.daily.date !== todayStr()){
+    const oldDate = state.daily.date;
+    const doneCount = state.daily.items.filter(i=>i.current>=i.target).length;
+    const dayPlanner = state.planner.filter(t=>t.createdDate===oldDate);
+    state.history[oldDate] = {
+      count: doneCount,
+      total: state.daily.items.length,
+      quests: state.daily.items.map(q=>({name:q.name, done:q.current>=q.target})),
+      plannerDone: dayPlanner.filter(t=>t.done).length,
+      plannerTotal: dayPlanner.length
+    };
+    const allDone = doneCount === state.daily.items.length;
+    state.player.streak = allDone ? state.player.streak+1 : 0;
+    state.daily = {date: todayStr(), items: JSON.parse(JSON.stringify(DEFAULT_QUESTS)).map(q=>({...q, current:0})), bonusGiven:false};
+    const keys = Object.keys(state.history).sort();
+    if(keys.length>60){ keys.slice(0, keys.length-60).forEach(k=>delete state.history[k]); }
+    saveAll();
+  }
+}
+function saveAll(){
+  storeSet('sys-player', JSON.stringify(state.player));
+  storeSet('sys-daily', JSON.stringify(state.daily));
+  storeSet('sys-planner', JSON.stringify(state.planner));
+  storeSet('sys-history', JSON.stringify(state.history));
+}
+
+/* ============ HELPERS ============ */
+function showToast(msg){
+  const t = document.getElementById('toast');
+  t.textContent = msg; t.classList.add('show');
+  setTimeout(()=>t.classList.remove('show'), 2400);
+}
+function rankFor(level){
+  if(level>=40) return 'S'; if(level>=30) return 'A'; if(level>=20) return 'B';
+  if(level>=10) return 'C'; if(level>=5) return 'D'; return 'E';
+}
+function vibrate(pattern){ try{ if(navigator.vibrate) navigator.vibrate(pattern); }catch(e){} }
+
+function gainExp(amount){
+  const p = state.player;
+  p.exp += amount;
+  if(amount > 0){
+    let leveled = false, gained = 0;
+    while(p.exp >= p.expToNext){
+      p.exp -= p.expToNext; p.level += 1; gained++;
+      p.expToNext = Math.round(p.expToNext * 1.15);
+      leveled = true;
+    }
+    if(leveled){
+      gainRP(gained * 10);
+      document.getElementById('luSub').textContent = `LV. ${p.level} REACHED`;
+      document.getElementById('luPoints').textContent = `+${gained*10} REWARD POINTS AWARDED`;
+      const ov = document.getElementById('levelup');
+      ov.classList.add('show');
+      spawnBurstParticles();
+      vibrate([80,40,80,40,160]);
+      setTimeout(()=>ov.classList.remove('show'), 2200);
+      checkAchievements();
+    }
+  } else if(amount < 0){
+    while(p.exp < 0 && p.level > 1){
+      p.level -= 1;
+      p.expToNext = Math.max(50, Math.round(p.expToNext / 1.15));
+      p.exp += p.expToNext;
+    }
+    if(p.exp < 0) p.exp = 0;
+  }
+}
+function gainRP(amount){
+  state.player.rewardPoints = Math.max(0, (state.player.rewardPoints||0) + amount);
+}
+function spawnBurstParticles(){
+  const wrap = document.querySelector('.lu-rings');
+  if(!wrap) return;
+  for(let i=0;i<24;i++){
+    const p = document.createElement('div');
+    p.className = 'lu-particle';
+    const angle = (Math.PI*2/24)*i + Math.random()*0.3;
+    const dist = 70 + Math.random()*60;
+    p.style.setProperty('--dx', (Math.cos(angle)*dist)+'px');
+    p.style.setProperty('--dy', (Math.sin(angle)*dist)+'px');
+    p.style.animationDelay = (Math.random()*0.15)+'s';
+    wrap.appendChild(p);
+    setTimeout(()=>p.remove(), 1200);
+  }
+}
+function checkAchievements(){
+  ACHIEVEMENTS.forEach(a=>{
+    if(a.check(state) && !state.player.unlocked.includes(a.id)){
+      state.player.unlocked.push(a.id);
+      showToast(`TITLE UNLOCKED — ${a.label}`);
+      vibrate(120);
+    }
+  });
+}
+function questsSummary(){
+  const done = state.daily.items.filter(i=>i.current>=i.target).length;
+  return {done, total: state.daily.items.length, pending: state.daily.items.filter(i=>i.current<i.target)};
+}
+function currentTitle(){
+  const owned = ACHIEVEMENTS.filter(a=>state.player.unlocked.includes(a.id));
+  return owned.length ? owned[owned.length-1].label : 'UNRANKED HUNTER';
+}
+function escapeHtml(s){ return s.replace(/[&<>"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+
+function typewriterInto(el, text, speed){
+  if(!el) return;
+  el.textContent = '';
+  const cursor = document.createElement('span');
+  cursor.className = 'tw-cursor';
+  el.appendChild(cursor);
+  let i = 0;
+  (function step(){
+    if(i < text.length){
+      cursor.insertAdjacentText('beforebegin', text[i]);
+      i++;
+      setTimeout(step, speed);
+    } else {
+      cursor.remove();
+    }
+  })();
+}
+
+/* ============ ACTIONS ============ */
+function stepQuest(id, dir){
+  const q = state.daily.items.find(i=>i.id===id);
+  if(!q) return;
+  const wasDone = q.current >= q.target;
+  q.current = Math.max(0, Math.min(q.target, +(q.current + dir*q.step).toFixed(2)));
+  const isDone = q.current >= q.target;
+  if(isDone && !wasDone){
+    gainExp(q.xp);
+    gainRP(2);
+    showToast(`+${q.xp} EXP — ${q.name} complete`);
+    checkDailyBonus();
+    saveAll(); renderTab();
+    setTimeout(()=>{
+      const row = document.querySelector(`[data-qid="${id}"]`);
+      if(row){
+        row.classList.add('burst');
+        const chk = row.querySelector('.check');
+        if(chk){ chk.classList.add('ping'); setTimeout(()=>chk.classList.remove('ping'), 500); }
+        setTimeout(()=>row.classList.remove('burst'),500);
+      }
+    },30);
+    return;
+  }
+  if(!isDone && wasDone){
+    gainExp(-q.xp);
+    gainRP(-2);
+    showToast(`−${q.xp} EXP — ${q.name} undone`);
+  }
+  checkDailyBonus(); saveAll(); renderTab();
+}
+function checkDailyBonus(){
+  const allDone = state.daily.items.every(i=>i.current>=i.target);
+  if(allDone && !state.daily.bonusGiven){
+    state.daily.bonusGiven = true; gainExp(50); gainRP(5);
+    showToast('DAILY QUEST CLEARED — +50 EXP BONUS');
+  } else if(!allDone && state.daily.bonusGiven){
+    state.daily.bonusGiven = false; gainExp(-50); gainRP(-5);
+  }
+}
+function addPlannerTask(){
+  const input = document.getElementById('plannerInput');
+  const cat = document.getElementById('catSelect').value;
+  const text = input.value.trim();
+  if(!text) return;
+  state.planner.push({id:'t'+Date.now(), text, category:cat, done:false, createdDate:todayStr()});
+  input.value=''; saveAll(); renderTab();
+}
+function togglePlanner(id){
+  const t = state.planner.find(x=>x.id===id); if(!t) return;
+  t.done = !t.done;
+  if(t.done){ gainExp(8); gainRP(1); showToast('+8 EXP'); }
+  else { gainExp(-8); gainRP(-1); }
+  saveAll(); renderTab();
+}
+function deletePlanner(id){ state.planner = state.planner.filter(x=>x.id!==id); saveAll(); renderTab(); }
+
+function redeemReward(id){
+  const r = state.player.rewards.find(x=>x.id===id);
+  if(!r || state.player.rewardPoints < r.cost) return;
+  state.player.rewardPoints -= r.cost;
+  state.player.redemptions.unshift({name:r.name, date: todayStr(), ts: Date.now()});
+  state.player.redemptions = state.player.redemptions.slice(0,20);
+  showToast(`REDEEMED — ${r.name}`);
+  vibrate(100);
+  saveAll(); renderTab();
+}
+function addReward(){
+  const nameInput = document.getElementById('rewardNameInput');
+  const costInput = document.getElementById('rewardCostInput');
+  const name = nameInput.value.trim();
+  const cost = parseInt(costInput.value, 10);
+  if(!name || !cost || cost<=0) return;
+  state.player.rewards.push({id:'r'+Date.now(), name, cost, custom:true});
+  nameInput.value=''; costInput.value='';
+  saveAll(); renderTab();
+}
+function deleteReward(id){
+  state.player.rewards = state.player.rewards.filter(r=>r.id!==id);
+  saveAll(); renderTab();
+}
+
+function voiceLine(){
+  const {done, total, pending} = questsSummary();
+  const p = state.player;
+  const hour = new Date().getHours();
+  if(done===total) return `All daily objectives cleared, ${p.name}. The System acknowledges your discipline.`;
+  if(hour>=22 || hour<5) return `Late hours detected. ${pending.length} quest${pending.length!==1?'s':''} remain. Rest is strength too — but so is finishing what you started.`;
+  if(done===0) return `No progress logged today, ${p.name}. Begin with ${pending[0]?.name || 'a quest'}.`;
+  return `${done}/${total} quests cleared. ${pending[0]?.name} remains at ${pending[0]?.current}/${pending[0]?.target} ${pending[0]?.unit}.`;
+}
+
+/* ============ TAB SWITCHING ============ */
+function switchTab(tab){
+  activeTab = tab;
+  document.querySelectorAll('.navbtn').forEach(b=>b.classList.toggle('active', b.dataset.tab===tab));
+  renderTab();
+}
+function renderTab(){
+  const el = document.getElementById('tabContent');
+  el.classList.remove('glitch-in'); void el.offsetWidth; el.classList.add('glitch-in');
+  const p = state.player;
+  document.getElementById('topRank').textContent = rankFor(p.level)+'-RANK';
+
+  if(activeTab==='status') el.innerHTML = renderStatus();
+  else if(activeTab==='quest') el.innerHTML = renderQuest();
+  else if(activeTab==='planner') el.innerHTML = renderPlanner();
+  else if(activeTab==='log') el.innerHTML = renderLog();
+
+  if(activeTab==='status'){
+    document.getElementById('playerName').addEventListener('change', (e)=>{
+      state.player.name = e.target.value.trim() || 'Hunter'; saveAll(); renderTab();
+    });
+  }
+  if(activeTab==='quest'){
+    const vl = document.querySelector('.voice-line');
+    if(vl) typewriterInto(vl, voiceLine(), 18);
+  }
+  if(activeTab==='log') drawChart();
+}
+
+function renderStatus(){
+  const p = state.player;
+  const expPct = Math.min(100, (p.exp/p.expToNext)*100);
+
+  const rewardRows = p.rewards.map(r=>{
+    const affordable = p.rewardPoints >= r.cost;
+    return `<div class="reward-row">
+      <div class="reward-body">
+        <div class="reward-name">${escapeHtml(r.name)}</div>
+        <div class="reward-cost">${r.cost} RP</div>
+      </div>
+      <button class="claimBtn" ${affordable?'':'disabled'} onclick="redeemReward('${r.id}')">CLAIM</button>
+      ${r.custom ? `<button class="delBtn" onclick="deleteReward('${r.id}')">×</button>` : ''}
+    </div>`;
+  }).join('');
+
+  const redemptionRows = p.redemptions.length
+    ? p.redemptions.slice(0,5).map(r=>`<div class="redemption-row"><span>${escapeHtml(r.name)}</span><span class="redemption-date">${new Date(r.ts).toLocaleDateString('en-US',{month:'short',day:'numeric'})}</span></div>`).join('')
+    : `<div class="empty">NOTHING REDEEMED YET</div>`;
+
+  const badges = ACHIEVEMENTS.map(a=>{
+    const owned = p.unlocked.includes(a.id);
+    return `<div class="badge ${owned?'':'locked'}">${owned?'★ ':'🔒 '}${a.label}</div>`;
+  }).join('');
+
+  return `
+    <div class="frame">
+      <div class="avatar-ring"><div class="avatar-glyph">${rankFor(p.level)}</div></div>
+      <div class="name-row"><input id="playerName" value="${escapeHtml(p.name)}" maxlength="16" /></div>
+      <div class="title-chip">${currentTitle()}</div>
+      <div class="lvl-center">LV <b>${p.level}</b></div>
+      <div class="exp-track"><div class="exp-fill" style="width:${expPct}%"></div></div>
+      <div class="exp-text"><span>EXP</span><span>${p.exp} / ${p.expToNext}</span></div>
+      <div class="streak-row"><span>STREAK: <b>${p.streak}</b> DAYS</span><span>RANK: <b style="color:var(--gold)">${rankFor(p.level)}</b></span></div>
+    </div>
+    <div class="frame">
+      <div class="frame-label">REWARDS SHOP <span class="tag">${p.rewardPoints} RP AVAILABLE</span></div>
+      ${rewardRows}
+      <div class="add-row" style="margin-top:12px;">
+        <input id="rewardNameInput" placeholder="Custom reward..." style="flex:1.4;background:var(--void);border:1px solid var(--edge);color:var(--text);padding:9px 10px;font-family:'Rajdhani',sans-serif;font-size:13px;outline:none;" />
+        <input id="rewardCostInput" type="number" placeholder="RP" style="width:56px;background:var(--void);border:1px solid var(--edge);color:var(--text);padding:9px 6px;font-family:'Share Tech Mono',monospace;font-size:13px;outline:none;" />
+        <button class="addBtn" onclick="addReward()">ADD</button>
+      </div>
+    </div>
+    <div class="frame">
+      <div class="frame-label">REDEMPTION LOG <span class="tag">RECENT</span></div>
+      ${redemptionRows}
+    </div>
+    <div class="frame">
+      <div class="frame-label">TITLES <span class="tag">${p.unlocked.length}/${ACHIEVEMENTS.length}</span></div>
+      <div class="badges-row">${badges}</div>
+    </div>
+  `;
+}
+
+function renderQuest(){
+  const allDailyDone = state.daily.items.every(i=>i.current>=i.target);
+  const questsHtml = state.daily.items.map(q=>{
+    const done = q.current >= q.target;
+    return `
+    <div class="quest" data-qid="${q.id}">
+      <div class="check ${done?'done':''}">${done?'✓':''}</div>
+      <div class="qbody">
+        <div class="qname ${done?'done':''}">${q.name}</div>
+        <div class="qmeta">TARGET ${q.target} ${q.unit} · +${q.xp} EXP</div>
+      </div>
+      <div class="stepper">
+        <button onclick="stepQuest('${q.id}',-1)">−</button>
+        <div class="count">${q.current}/${q.target}</div>
+        <button onclick="stepQuest('${q.id}',1)">+</button>
+      </div>
+    </div>`;
+  }).join('');
+
+  return `
+    <div class="frame">
+      <div class="frame-label">SYSTEM VOICE <span class="tag">LIVE</span></div>
+      <div class="voice-line">${voiceLine()}</div>
+    </div>
+    <div class="frame">
+      <div class="frame-label">DAILY QUEST <span class="tag">RESETS AT MIDNIGHT</span></div>
+      ${questsHtml}
+      <div class="quest-footer ${allDailyDone?'complete':''}">
+        ${allDailyDone ? '✓ DAILY QUEST CLEARED — BONUS EXP AWARDED' : '⚠ INCOMPLETE QUESTS CARRY NO PENALTY, BUT YOUR STREAK RESETS'}
+      </div>
+    </div>
+  `;
+}
+
+function renderPlanner(){
+  const todays = state.planner.filter(t=>t.createdDate===todayStr());
+  const plannerHtml = todays.length ? todays.map(t=>`
+    <div class="planner-item">
+      <div class="cat-dot cat-${t.category}"></div>
+      <div class="ptext ${t.done?'done':''}" onclick="togglePlanner('${t.id}')">${escapeHtml(t.text)}</div>
+      <button class="delBtn" onclick="deletePlanner('${t.id}')">×</button>
+    </div>
+  `).join('') : `<div class="empty">NO TASKS QUEUED — ADD ONE BELOW</div>`;
+
+  return `
+    <div class="frame">
+      <div class="frame-label">PLANNER <span class="tag">TODAY'S TASKS</span></div>
+      <div class="add-row">
+        <input id="plannerInput" placeholder="Add a task..." onkeydown="if(event.key==='Enter')addPlannerTask()" />
+        <select id="catSelect">
+          <option value="study">STUDY</option>
+          <option value="exercise">EXERCISE</option>
+          <option value="personal">LIFE</option>
+        </select>
+        <button class="addBtn" onclick="addPlannerTask()">ADD</button>
+      </div>
+      ${plannerHtml}
+    </div>
+    ${!storageWorks ? '<div class="storage-note">⚠ THIS BROWSER BLOCKED LOCAL STORAGE — PROGRESS WILL NOT PERSIST BETWEEN SESSIONS</div>' : ''}
+  `;
+}
+
+function normalizeRecord(raw){
+  if(raw && typeof raw === 'object') return raw;
+  return {count: raw||0, total: 4, quests: [], plannerDone: 0, plannerTotal: 0};
+}
+
+function historyRows(){
+  const keys = Object.keys(state.history).filter(k=>k!==todayStr()).sort().reverse().slice(0,14);
+  if(keys.length===0) return '<div class="empty">NO PAST RECORDS YET — YOUR FIRST COMPLETED DAY WILL APPEAR HERE</div>';
+  return keys.map(k=>{
+    const rec = normalizeRecord(state.history[k]);
+    const d = new Date(k+'T00:00:00');
+    const label = d.toLocaleDateString('en-US',{month:'short', day:'numeric'});
+    const questChips = rec.quests && rec.quests.length
+      ? rec.quests.map(q=>`<span class="hist-chip ${q.done?'ok':'no'}">${q.done?'✓':'✕'} ${q.name}</span>`).join('')
+      : `<span class="hist-chip ${rec.count>=rec.total?'ok':'no'}">${rec.count}/${rec.total} quests</span>`;
+    const plannerText = rec.plannerTotal>0 ? `${rec.plannerDone}/${rec.plannerTotal} tasks done` : 'no tasks logged';
+    return `<div class="hist-row">
+      <div class="hist-date">${label}</div>
+      <div class="hist-chips">${questChips}</div>
+      <div class="hist-planner">${plannerText}</div>
+    </div>`;
+  }).join('');
+}
+
+function renderLog(){
+  const totalQuestsLogged = Object.values(state.history).reduce((a,b)=>a+normalizeRecord(b).count,0);
+  return `
+    <div class="frame">
+      <div class="frame-label">7-DAY ACTIVITY <span class="tag">QUESTS CLEARED / DAY</span></div>
+      <canvas id="chartCanvas"></canvas>
+      <div class="chart-labels" id="chartLabels"></div>
+    </div>
+    <div class="frame">
+      <div class="frame-label">DAILY LOG <span class="tag">LAST 14 DAYS</span></div>
+      ${historyRows()}
+    </div>
+    <div class="frame">
+      <div class="frame-label">SUMMARY <span class="tag">ALL TIME</span></div>
+      <div class="voice-line">Level ${state.player.level} · ${rankFor(state.player.level)}-Rank · ${state.player.streak} day streak · ${totalQuestsLogged} quests logged historically.</div>
+    </div>
+  `;
+}
+
+function drawChart(){
+  const canvas = document.getElementById('chartCanvas');
+  if(!canvas) return;
+  const dpr = window.devicePixelRatio || 1;
+  const w = canvas.clientWidth, h = 120;
+  canvas.width = w*dpr; canvas.height = h*dpr;
+  const ctx = canvas.getContext('2d');
+  ctx.scale(dpr,dpr);
+  ctx.clearRect(0,0,w,h);
+
+  const days = [];
+  for(let i=6;i>=0;i--){
+    const d = new Date(); d.setDate(d.getDate()-i);
+    const key = d.toISOString().slice(0,10);
+    let val;
+    if(key === todayStr()) val = state.daily.items.filter(q=>q.current>=q.target).length;
+    else val = normalizeRecord(state.history[key]).count;
+    days.push({key, val: val||0, label: d.toLocaleDateString('en-US',{weekday:'short'})[0]});
+  }
+  const max = 4;
+  const barW = w/7*0.5;
+  const gap = w/7;
+  days.forEach((d,i)=>{
+    const x = gap*i + gap/2 - barW/2;
+    const barH = Math.max(3,(d.val/max)*(h-20));
+    const grad = ctx.createLinearGradient(0,h-barH,0,h);
+    grad.addColorStop(0,'#49b4ff'); grad.addColorStop(1,'#1c3a5e');
+    ctx.fillStyle = d.key===todayStr() ? grad : 'rgba(73,180,255,0.35)';
+    ctx.fillRect(x, h-barH, barW, barH);
+  });
+  document.getElementById('chartLabels').innerHTML = days.map(d=>`<span>${d.label}</span>`).join('');
+}
+
+/* ============ CHAT (LIVE AI) ============ */
+let apiHistory = [];
+let chatBusy = false;
+function openChat(){
+  document.getElementById('chatOverlay').classList.add('show');
+  if(apiHistory.length===0) pushMsg('sys', `Connection established. I am the System. Ask about your quests, stats, or say what's on your mind, ${state.player.name}.`);
+}
+function closeChat(){ document.getElementById('chatOverlay').classList.remove('show'); }
+function pushMsg(who, text){
+  const log = document.getElementById('chatLog');
+  const div = document.createElement('div');
+  div.className = 'msg ' + who;
+  div.textContent = text;
+  log.appendChild(div);
+  log.scrollTop = log.scrollHeight;
+}
+function pushTyping(){
+  const log = document.getElementById('chatLog');
+  const div = document.createElement('div');
+  div.className = 'msg sys typing'; div.id = 'typingMsg'; div.textContent = '...';
+  log.appendChild(div); log.scrollTop = log.scrollHeight;
+}
+function removeTyping(){ const el = document.getElementById('typingMsg'); if(el) el.remove(); }
+
+async function sendChat(){
+  if(chatBusy) return;
+  const input = document.getElementById('chatInput');
+  const text = input.value.trim();
+  if(!text) return;
+  pushMsg('user', text);
+  apiHistory.push({role:'user', content:text});
+  input.value = ''; chatBusy = true; pushTyping();
+  try{
+    const reply = await fetchSystemReply();
+    removeTyping(); pushMsg('sys', reply);
+    apiHistory.push({role:'assistant', content:reply});
+  }catch(err){
+    removeTyping();
+    pushMsg('sys', `[Connection unstable — this live link only works while running inside the Claude app. Try again, ${state.player.name}.]`);
+  }
+  chatBusy = false;
+}
+async function fetchSystemReply(){
+  const p = state.player;
+  const {done, total, pending} = questsSummary();
+  const pendingPlanner = state.planner.filter(x=>!x.done);
+  const rank = rankFor(p.level);
+  const systemPrompt = `You are "The System" — the AI interface from Solo Leveling, bound to a real person named ${p.name} who uses you to run their daily exercise and task routine. Stay in character: calm, commanding, slightly cold but ultimately supportive. Keep replies SHORT (1-4 sentences), no markdown, no asterisks, no emoji.
+
+State: Name ${p.name}, Level ${p.level}, ${rank}-Rank, EXP ${p.exp}/${p.expToNext}, Streak ${p.streak} days, Reward Points ${p.rewardPoints} RP.
+Daily quests: ${done}/${total} cleared. Pending: ${pending.map(q=>`${q.name} (${q.current}/${q.target} ${q.unit})`).join(', ') || 'none'}.
+Planner tasks pending: ${pendingPlanner.map(t=>t.text).join(', ') || 'none'}.
+
+Respond to the Hunter's message as the System.`;
+  const response = await fetch("https://api.anthropic.com/v1/messages", {
+    method: "POST", headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ model: "claude-sonnet-4-6", max_tokens: 300, system: systemPrompt, messages: apiHistory })
+  });
+  const data = await response.json();
+  const textBlock = (data.content || []).find(b=>b.type==='text');
+  if(!textBlock) throw new Error('no text');
+  return textBlock.text.trim();
+}
+
+/* ============ PARTICLE BACKGROUND ============ */
+function initParticles(){
+  const canvas = document.getElementById('bgCanvas');
+  const ctx = canvas.getContext('2d');
+  let w,h,particles;
+  function resize(){
+    w = canvas.width = window.innerWidth;
+    h = canvas.height = window.innerHeight;
+  }
+  function makeParticles(){
+    particles = Array.from({length:34}, ()=>({
+      x: Math.random()*w, y: Math.random()*h,
+      r: Math.random()*1.6+0.4, vy: -(Math.random()*0.35+0.08),
+      vx: (Math.random()-0.5)*0.15, a: Math.random()*0.5+0.1
+    }));
+  }
+  resize(); makeParticles();
+  window.addEventListener('resize', ()=>{ resize(); makeParticles(); });
+  function tick(){
+    ctx.clearRect(0,0,w,h);
+    particles.forEach(p=>{
+      p.y += p.vy; p.x += p.vx;
+      if(p.y < -10){ p.y = h+10; p.x = Math.random()*w; }
+      ctx.beginPath();
+      ctx.fillStyle = `rgba(73,180,255,${p.a})`;
+      ctx.arc(p.x,p.y,p.r,0,Math.PI*2);
+      ctx.fill();
+    });
+    requestAnimationFrame(tick);
+  }
+  tick();
+}
+
+/* ============ BOOT ============ */
+function runBoot(){
+  const lines = [
+    'SYSTEM INITIALIZING...',
+    'SCANNING HUNTER STATUS...',
+    `WELCOME BACK, ${state.player.name.toUpperCase()}.`,
+    `LEVEL ${state.player.level} — ${rankFor(state.player.level)}-RANK`,
+    'DAILY QUEST WINDOW: OPEN'
+  ];
+  const totalChars = lines.reduce((a,l)=>a+l.length,0);
+  let typedChars = 0;
+  const el = document.getElementById('bootLines');
+  const bar = document.getElementById('bootBar');
+  const pct = document.getElementById('bootPct');
+  let li = 0, ci = 0;
+  function typeNext(){
+    if(li >= lines.length){
+      bar.style.width = '100%'; pct.textContent = '100%';
+      document.getElementById('bootTap').classList.add('show');
+      return;
+    }
+    if(ci === 0 && li>0) el.textContent += '\n';
+    if(ci < lines[li].length){
+      el.textContent += lines[li][ci]; ci++; typedChars++;
+      const p = Math.round((typedChars/totalChars)*100);
+      bar.style.width = p+'%'; pct.textContent = p+'%';
+      setTimeout(typeNext, 20);
+    } else { li++; ci=0; setTimeout(typeNext, 200); }
+  }
+  typeNext();
+}
+function dismissBoot(){ document.getElementById('boot').classList.add('hide'); }
+
+/* ============ PWA / SERVICE WORKER ============ */
+if('serviceWorker' in navigator){
+  window.addEventListener('load', ()=>{
+    navigator.serviceWorker.register('service-worker.js').catch(()=>{});
+  });
+}
+
+/* ============ INIT ============ */
+loadState();
+document.querySelector('.navbtn[data-tab="status"]').classList.add('active');
+renderTab();
+runBoot();
+initParticles();
+document.getElementById('boot').addEventListener('click', dismissBoot);
+setTimeout(()=>{ document.getElementById('bootTap').classList.add('show'); }, 3500);
+</script>
+</body>
+</html>
