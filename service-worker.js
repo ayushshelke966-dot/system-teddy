@@ -1,9 +1,8 @@
-const CACHE_NAME = 'system-cache-v14';
+const CACHE_NAME = 'system-cache-v15';
 const ASSETS = [
   './index.html',
   './manifest.json',
-  './icon-192.png',
-  './icon-512.png'
+  './skull-scan.png',
 ];
 
 self.addEventListener('install', (event) => {

@@ -37,12 +37,13 @@
   /* ---- face scan sequence ---- */
   #facescan{position:fixed;inset:0;background:#000;z-index:1000;display:none;align-items:center;justify-content:center;flex-direction:column;padding:30px;}
   #facescan.show{display:flex;}
-  .scan-perspective{width:220px;height:260px;position:relative;margin-bottom:28px;}
-  .scan-ring{position:absolute;inset:-22px;border:1px solid var(--sys-dim);border-radius:50%;animation:ringSpin 5s linear infinite;}
-  .scan-ring::before{content:'';position:absolute;top:-2px;left:50%;margin-left:-2px;width:4px;height:4px;background:var(--sys);border-radius:50%;box-shadow:0 0 8px var(--sys);}
-  .scan-ring2{position:absolute;inset:-38px;border:1px dashed rgba(73,180,255,0.25);border-radius:50%;animation:ringSpin 8s linear infinite reverse;}
-  @keyframes ringSpin{to{transform:rotate(360deg)}}
-  #faceCanvas{width:100%;height:100%;display:block;filter:drop-shadow(0 0 10px rgba(73,180,255,0.5));}
+  .scan-perspective{width:min(92vw,390px);height:min(92vw,390px);position:relative;margin-bottom:18px;perspective:900px;display:flex;align-items:center;justify-content:center;}
+  .scan-ring,.scan-ring2{display:none;}
+  #faceGraphic{width:100%;height:100%;object-fit:contain;display:block;mix-blend-mode:screen;filter:drop-shadow(0 0 16px rgba(73,180,255,.55));transform-style:preserve-3d;animation:skullFloat 5.5s ease-in-out infinite, skullTurn 7.5s ease-in-out infinite;}
+  @keyframes skullFloat{0%,100%{transform:translateY(0) scale(1)}50%{transform:translateY(-7px) scale(1.015)}}
+  @keyframes skullTurn{0%,100%{rotate:y -7deg}50%{rotate:y 7deg}}
+  .scan-perspective::after{content:'';position:absolute;inset:12% 8%;pointer-events:none;background:linear-gradient(180deg,transparent 46%,rgba(73,180,255,.0) 48%,rgba(73,180,255,.5) 50%,rgba(73,180,255,.0) 52%,transparent 54%);mix-blend-mode:screen;animation:scanGlint 2.4s ease-in-out infinite;}
+  @keyframes scanGlint{0%,100%{transform:translateY(-28%);opacity:.25}50%{transform:translateY(28%);opacity:.7}}
   .scan-linebar{position:absolute;left:6px;right:6px;height:3px;background:linear-gradient(90deg,transparent,var(--sys),transparent);box-shadow:0 0 14px var(--sys);animation:scanSweep 1.7s ease-in-out infinite;}
   @keyframes scanSweep{0%{top:4%}50%{top:94%}100%{top:4%}}
   #scanLines{font-family:'Share Tech Mono',monospace;font-size:12px;color:var(--sys);letter-spacing:1.5px;min-height:20px;text-shadow:0 0 8px rgba(73,180,255,0.5);text-align:center;}
@@ -307,9 +308,7 @@
 
 <div id="facescan">
   <div class="scan-perspective">
-    <div class="scan-ring2"></div>
-    <div class="scan-ring"></div>
-    <canvas id="faceCanvas" width="220" height="260"></canvas>
+    <img id="faceGraphic" src="skull-scan.png" alt="3D biometric skull scan">
     <div class="scan-linebar"></div>
   </div>
   <div id="scanLines"></div>
@@ -1282,252 +1281,13 @@ function dismissBoot(){
 }
 
 /* ============ FACE SCAN SEQUENCE ============ */
-const FACE_POINTS = [];
-const FACE_EDGES = [];
-
-function buildFacePointCloud(){
-  FACE_POINTS.length = 0; FACE_EDGES.length = 0;
-
-  // Skull-like scan point cloud: rounded cranium, cheek/jaw taper,
-  // deep eye sockets, nasal cavity and a squared dental plate.
-  const add = (x,y,z,r=1.2,base=true) => FACE_POINTS.push({x,y,z,r,base});
-
-  // Cranium shell
-  for(let i=0;i<170;i++){
-    const a = Math.random()*Math.PI*2;
-    const u = Math.random()*2-1;
-    const ry = Math.sqrt(1-u*u);
-    const y = u*0.82 + 0.02;
-    const x = Math.cos(a)*ry*0.67;
-    const z = Math.sin(a)*ry*0.42 + 0.04;
-    add(x,y,z,0.75+Math.random()*0.55,true);
-  }
-
-  // Cheekbones and jaw outline
-  for(let side of [-1,1]){
-    for(let i=0;i<42;i++){
-      const t=i/41;
-      const x=side*(0.30+0.30*t);
-      const y=0.05-0.78*t;
-      const z=0.47-0.08*t;
-      add(x+(Math.random()-.5)*.025,y+(Math.random()-.5)*.025,z+(Math.random()-.5)*.025,1.0+Math.random()*.6,false);
-    }
-  }
-
-  // Brow ridge
-  for(let side of [-1,1]){
-    for(let i=0;i<25;i++){
-      const t=i/24;
-      add(side*(0.12+0.22*t),0.22+0.03*Math.sin(t*Math.PI),0.52,
-          1.0+Math.random()*.7,false);
-    }
-  }
-
-  // Nose bridge + nasal cavity rim
-  for(let i=0;i<28;i++){
-    const t=i/27;
-    add((Math.random()-.5)*.10,-0.02-0.28*t,0.56,
-        0.9+Math.random()*.5,false);
-  }
-  for(let i=0;i<20;i++){
-    const a=Math.PI*2*i/20;
-    add(Math.cos(a)*.10,-0.29+Math.sin(a)*.08,0.57,1.0,false);
-  }
-
-  // Teeth / dental plate
-  for(let row=0;row<2;row++){
-    for(let i=0;i<18;i++){
-      const x=-0.27+i*(0.54/17);
-      const y=-0.48-row*0.075;
-      add(x,y,0.55,1.0+Math.random()*.45,false);
-    }
-  }
-
-  // A few jaw/chin particles
-  for(let i=0;i<30;i++){
-    const a=Math.random()*Math.PI*2;
-    const x=Math.cos(a)*0.30;
-    const y=-0.58+Math.sin(a)*0.13;
-    add(x,y,0.43,0.7+Math.random()*.5,true);
-  }
-}
-
-let faceScanActive = false;
-let faceRotStart = null;
-
-function drawSkull(ctx,W,H,dpr,ts){
-  // True-ish 3D canvas skull: a volumetric point/mesh model projected with
-  // perspective. It rotates continuously around its vertical axis.
-  const t = ts - (faceRotStart || ts);
-  const angle = t * (Math.PI*2/6200);
-  const cx=W/2, cy=H*.49, s=Math.min(W,H)*.44;
-  const ca=Math.cos(angle), sa=Math.sin(angle);
-
-  const project=(x,y,z)=>{
-    const rx=x*ca + z*sa;
-    const rz=-x*sa + z*ca;
-    const persp=1.55/(1.55-rz*.55);
-    return {x:cx+rx*s*persp,y:cy-y*s*persp,z:rz,p:persp};
-  };
-  const shade=(z)=>Math.max(.12,Math.min(1,.48+z*.42));
-
-  // Build a dense 3D surface every frame. The depth and perspective change
-  // as the skull turns, making the rotation obvious rather than a flat icon.
-  const pts=[];
-  for(let i=0;i<430;i++){
-    const a=Math.random()*Math.PI*2;
-    const u=Math.random()*2-1;
-    const rr=Math.sqrt(1-u*u);
-    let x=Math.cos(a)*rr*.67;
-    let y=u*.82+.03;
-    let z=Math.sin(a)*rr*.49+.02;
-    // Slightly flatten the sides and back of the cranium.
-    if(y<-.05) x*=.95;
-    pts.push({x,y,z,r:.65+Math.random()*.7,type:'bone'});
-  }
-
-  // Jaw: two curved 3D rails.
-  for(let side of [-1,1]) for(let i=0;i<95;i++){
-    const q=i/94;
-    const y=.02-q*.78;
-    const x=side*(.27+.31*q);
-    const z=.39+.08*Math.sin(q*Math.PI);
-    pts.push({x,y,z,r:.75+Math.random()*.65,type:'bone'});
-  }
-
-  // Teeth sit on the front of the jaw and remain clearly separated.
-  for(let row=0;row<2;row++) for(let i=0;i<14;i++){
-    const x=-.27+i*(.54/13);
-    const y=-.42-row*.105;
-    pts.push({x,y,z:.53,r:1.15,type:'tooth'});
-  }
-
-  // Brow/cheek ridge particles.
-  for(let side of [-1,1]) for(let i=0;i<38;i++){
-    const q=i/37;
-    pts.push({x:side*(.12+.24*q),y:.20-.08*q,z:.51,r:.8+Math.random()*.6,type:'bone'});
-  }
-
-  // Draw back-to-front for actual depth ordering.
-  const projected=pts.map(p=>({...p, ...project(p.x,p.y,p.z)})).sort((a,b)=>a.z-b.z);
-  ctx.save();
-  ctx.globalCompositeOperation='source-over';
-
-  // Subtle volumetric glow behind the skull.
-  const glow=ctx.createRadialGradient(cx,cy,0,cx,cy,s*.82);
-  glow.addColorStop(0,'rgba(73,180,255,.13)');
-  glow.addColorStop(1,'rgba(73,180,255,0)');
-  ctx.fillStyle=glow; ctx.fillRect(0,0,W,H);
-
-  for(const p of projected){
-    // Hide the far side naturally.
-    if(p.z < -.48) continue;
-    const a=.28+shade(p.z)*.58;
-    const size=p.r*dpr*(.62+p.p*.28);
-    ctx.beginPath();
-    ctx.fillStyle=p.type==='tooth'
-      ? `rgba(220,238,245,${Math.min(1,a+.12)})`
-      : `rgba(145,207,239,${a})`;
-    ctx.shadowColor='rgba(73,180,255,.72)';
-    ctx.shadowBlur=(p.type==='tooth'?2.5:1.6)*dpr;
-    ctx.arc(p.x,p.y,size,0,Math.PI*2);
-    ctx.fill();
-  }
-  ctx.shadowBlur=0;
-
-  // Deep 3D eye sockets: projected dark ovals with cyan rims.
-  function socket(side){
-    const c=project(side*.25,.02,.53);
-    const edge=project(side*.43,.02,.43);
-    const w=Math.max(8,Math.abs(edge.x-c.x)*1.35);
-    const h=w*.72;
-    ctx.save();
-    ctx.translate(c.x,c.y);
-    ctx.rotate(side*.07 - angle*.08);
-    ctx.beginPath();
-    ctx.ellipse(0,0,w,h,0,0,Math.PI*2);
-    ctx.fillStyle='rgba(0,2,7,.94)';
-    ctx.shadowColor='rgba(0,0,0,.95)'; ctx.shadowBlur=9*dpr; ctx.fill();
-    ctx.shadowBlur=0; ctx.lineWidth=1.1*dpr;
-    ctx.strokeStyle='rgba(73,180,255,.78)'; ctx.stroke();
-    ctx.restore();
-  }
-  socket(-1); socket(1);
-
-  // Nasal cavity, also projected in 3D.
-  const n=project(0,-.22,.57), nw=project(.11,-.22,.53);
-  ctx.beginPath();
-  ctx.moveTo(n.x,n.y-.03*s); ctx.lineTo(nw.x,nw.y+.04*s);
-  ctx.lineTo(n.x,n.y+.10*s); ctx.lineTo(2*n.x-cx,n.y+.04*s); ctx.closePath();
-  ctx.fillStyle='rgba(0,2,7,.96)'; ctx.fill();
-  ctx.strokeStyle='rgba(73,180,255,.72)'; ctx.stroke();
-
-  // Teeth separators for a recognizable skull silhouette.
-  const left=project(-.28,-.42,.56), right=project(.28,-.42,.56);
-  ctx.lineWidth=.65*dpr; ctx.strokeStyle='rgba(80,160,210,.7)';
-  for(let i=1;i<14;i++){
-    const q=i/14, a=project(-.28+.56*q,-.43,.57), b=project(-.28+.56*q,-.62,.57);
-    ctx.beginPath(); ctx.moveTo(a.x,a.y); ctx.lineTo(b.x,b.y); ctx.stroke();
-  }
-
-  // A few rotating contour lines reinforce the 3D volume.
-  ctx.lineWidth=.45*dpr; ctx.strokeStyle='rgba(170,225,255,.24)';
-  for(let k=-.55;k<=.55;k+=.22){
-    const a=project(k,-.72,.25), b=project(k,.66,.25);
-    ctx.beginPath(); ctx.moveTo(a.x,a.y); ctx.lineTo(b.x,b.y); ctx.stroke();
-  }
-  ctx.restore();
-}
-function renderFaceFrame(ts){
-  if(!faceScanActive) return;
-  if(!faceRotStart) faceRotStart=ts;
-  const canvas=document.getElementById('faceCanvas');
-  if(!canvas){faceScanActive=false;return;}
-  const ctx=canvas.getContext('2d');
-  const dpr=Math.min(window.devicePixelRatio||1,2.5);
-  const cssW=canvas.clientWidth||220, cssH=canvas.clientHeight||260;
-  if(canvas.width!==Math.round(cssW*dpr)){
-    canvas.width=Math.round(cssW*dpr); canvas.height=Math.round(cssH*dpr);
-  }
-  const W=canvas.width,H=canvas.height;
-  ctx.setTransform(1,0,0,1,0,0);
-  ctx.clearRect(0,0,W,H);
-
-  drawSkull(ctx,W,H,dpr,ts);
-
-  // Keep the point-cloud scan aesthetic as a subtle animated overlay.
-  const angle=(ts-faceRotStart)*(Math.PI*2/9000);
-  const cosA=Math.cos(angle),sinA=Math.sin(angle);
-  const cx=W/2,cy=H*.49,scale=Math.min(W,H)*.43;
-  for(const pt of FACE_POINTS){
-    const rx=pt.x*cosA+pt.z*sinA;
-    const rz=-pt.x*sinA+pt.z*cosA;
-    if(rz<-.35) continue;
-    const persp=1.55/(1.55-rz*.18);
-    const px=cx+rx*scale*persp, py=cy-pt.y*scale*persp;
-    const alpha=.18+((rz+1)/2)*.45;
-    ctx.beginPath();
-    ctx.fillStyle=`rgba(150,215,255,${alpha})`;
-    ctx.shadowColor='rgba(73,180,255,.7)';
-    ctx.shadowBlur=(pt.base?1.5:3)*dpr;
-    ctx.arc(px,py,pt.r*dpr*.7,0,Math.PI*2);
-    ctx.fill();
-  }
-  ctx.shadowBlur=0;
-  requestAnimationFrame(renderFaceFrame);
-}
-
-function startFaceCanvasLoop(){
-  if(FACE_POINTS.length===0) buildFacePointCloud();
-  faceScanActive=true;
-  faceRotStart=null;
-  requestAnimationFrame(renderFaceFrame);
-}
-function stopFaceCanvasLoop(){faceScanActive=false;}
+// The scan uses a real generated 3D skull graphic rather than a procedural
+// point-cloud approximation. CSS provides a subtle 3D turn/float animation.
+function startFaceCanvasLoop(){ /* kept for compatibility with older calls */ }
+function stopFaceCanvasLoop(){ /* kept for compatibility with older calls */ }
 
 function startFaceScan(){
   document.getElementById('facescan').classList.add('show');
-  startFaceCanvasLoop();
   vibrate(40);
   const lines = [
     'INITIATING BIOMETRIC SCAN...',
