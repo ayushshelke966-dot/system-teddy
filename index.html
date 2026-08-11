@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <title>THE SYSTEM</title>
 <link rel="manifest" href="manifest.json">
 <meta name="theme-color" content="#03050a">
@@ -21,13 +21,14 @@
   }
   *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
   html,body{background:var(--void);color:var(--text);font-family:'Rajdhani',sans-serif;min-height:100vh;overflow-x:hidden;
-    overscroll-behavior-y:contain;}
+    overflow-y:auto;overscroll-behavior-y:auto;-webkit-overflow-scrolling:touch;touch-action:pan-y;}
   .frame-label, .brand-title, .brand-sub, .navbtn, .tag, .qname, .ptext, .reward-name, .badge, .title-chip,
   .lvl-center, .streak-row, .msg, .exp-text, .hist-date, .hist-chip, .redemption-row, button, .check {
     -webkit-user-select:none; user-select:none; -webkit-touch-callout:none;
   }
   #bgCanvas{position:fixed;inset:0;z-index:0;}
-  .shell{position:relative;z-index:1;max-width:520px;margin:0 auto;min-height:100vh;padding-bottom:96px;}
+  .shell{position:relative;z-index:1;max-width:520px;margin:0 auto;min-height:100vh;padding-bottom:96px;
+    touch-action:pan-y;}
 
   /* boot */
   #boot{position:fixed;inset:0;background:#000;z-index:1000;display:flex;align-items:center;justify-content:center;flex-direction:column;padding:30px;}
@@ -1283,128 +1284,209 @@ function dismissBoot(){
 /* ============ FACE SCAN SEQUENCE ============ */
 const FACE_POINTS = [];
 const FACE_EDGES = [];
+
 function buildFacePointCloud(){
   FACE_POINTS.length = 0; FACE_EDGES.length = 0;
-  const ROWS = 20, COLS = 28;
-  const grid = [];
-  for(let r=0; r<=ROWS; r++){
-    grid[r] = [];
-    const phi = (r/ROWS)*Math.PI;
-    for(let c=0; c<COLS; c++){
-      const theta = (c/COLS)*Math.PI*2;
-      let x = Math.sin(phi)*Math.cos(theta);
-      let y = Math.cos(phi);
-      let z = Math.sin(phi)*Math.sin(theta);
-      x *= 0.80; y *= 0.96; z *= 0.86;
 
-      // cheekbone/jaw bulge centered around the mid-face (widest at cheek height)
-      const cheekBulge = 1 + 0.22*Math.exp(-Math.pow((y-0.02)/0.34, 2));
-      x *= cheekBulge; z *= (1 + (cheekBulge-1)*0.6);
+  // Skull-like scan point cloud: rounded cranium, cheek/jaw taper,
+  // deep eye sockets, nasal cavity and a squared dental plate.
+  const add = (x,y,z,r=1.2,base=true) => FACE_POINTS.push({x,y,z,r,base});
 
-      // jaw taper toward chin
-      if(y < -0.05){
-        const t = Math.min(1, (-y-0.05)/0.75);
-        x *= (1 - 0.42*t);
-        z *= (1 - 0.24*t);
-      }
-      // forehead narrowing toward crown
-      if(y > 0.45){
-        const t = Math.min(1, (y-0.45)/0.55);
-        x *= (1 - 0.22*t);
-        z *= (1 - 0.16*t);
-      }
-      const jitter = 0.008;
-      x += (Math.random()-0.5)*jitter; y += (Math.random()-0.5)*jitter; z += (Math.random()-0.5)*jitter;
-      const idx = FACE_POINTS.length;
-      FACE_POINTS.push({x,y,z, base:true, r: 0.9+Math.random()*0.4});
-      grid[r][c] = idx;
+  // Cranium shell
+  for(let i=0;i<170;i++){
+    const a = Math.random()*Math.PI*2;
+    const u = Math.random()*2-1;
+    const ry = Math.sqrt(1-u*u);
+    const y = u*0.82 + 0.02;
+    const x = Math.cos(a)*ry*0.67;
+    const z = Math.sin(a)*ry*0.42 + 0.04;
+    add(x,y,z,0.75+Math.random()*0.55,true);
+  }
+
+  // Cheekbones and jaw outline
+  for(let side of [-1,1]){
+    for(let i=0;i<42;i++){
+      const t=i/41;
+      const x=side*(0.30+0.30*t);
+      const y=0.05-0.78*t;
+      const z=0.47-0.08*t;
+      add(x+(Math.random()-.5)*.025,y+(Math.random()-.5)*.025,z+(Math.random()-.5)*.025,1.0+Math.random()*.6,false);
     }
   }
-  for(let r=0; r<=ROWS; r++){
-    for(let c=0; c<COLS; c++){
-      const cur = grid[r][c];
-      const rightC = (c+1)%COLS;
-      FACE_EDGES.push([cur, grid[r][rightC]]);
-      if(r < ROWS) FACE_EDGES.push([cur, grid[r+1][c]]);
+
+  // Brow ridge
+  for(let side of [-1,1]){
+    for(let i=0;i<25;i++){
+      const t=i/24;
+      add(side*(0.12+0.22*t),0.22+0.03*Math.sin(t*Math.PI),0.52,
+          1.0+Math.random()*.7,false);
     }
   }
-  function addCluster(cx,cy,cz,spread,count,rMin,rMax){
-    for(let i=0;i<count;i++){
-      FACE_POINTS.push({
-        x: cx + (Math.random()-0.5)*spread,
-        y: cy + (Math.random()-0.5)*spread,
-        z: cz + (Math.random()-0.5)*spread*0.6,
-        base:false, r: rMin+Math.random()*(rMax-rMin)
-      });
+
+  // Nose bridge + nasal cavity rim
+  for(let i=0;i<28;i++){
+    const t=i/27;
+    add((Math.random()-.5)*.10,-0.02-0.28*t,0.56,
+        0.9+Math.random()*.5,false);
+  }
+  for(let i=0;i<20;i++){
+    const a=Math.PI*2*i/20;
+    add(Math.cos(a)*.10,-0.29+Math.sin(a)*.08,0.57,1.0,false);
+  }
+
+  // Teeth / dental plate
+  for(let row=0;row<2;row++){
+    for(let i=0;i<18;i++){
+      const x=-0.27+i*(0.54/17);
+      const y=-0.48-row*0.075;
+      add(x,y,0.55,1.0+Math.random()*.45,false);
     }
   }
-  addCluster(-0.24, 0.10, 0.66, 0.13, 20, 1.4, 2.4);
-  addCluster( 0.24, 0.10, 0.66, 0.13, 20, 1.4, 2.4);
-  addCluster( 0, -0.14, 0.75, 0.08, 12, 1.1, 1.9);
-  addCluster( 0, -0.36, 0.68, 0.20, 18, 1.1, 1.9);
+
+  // A few jaw/chin particles
+  for(let i=0;i<30;i++){
+    const a=Math.random()*Math.PI*2;
+    const x=Math.cos(a)*0.30;
+    const y=-0.58+Math.sin(a)*0.13;
+    add(x,y,0.43,0.7+Math.random()*.5,true);
+  }
 }
 
 let faceScanActive = false;
 let faceRotStart = null;
+
+function drawSkull(ctx,W,H,dpr,ts){
+  const cx=W/2, cy=H*0.49, s=Math.min(W,H)*0.43;
+  const pulse=1+Math.sin(ts/500)*0.008;
+
+  ctx.save();
+  ctx.translate(cx,cy);
+  ctx.scale(pulse,pulse);
+
+  // Soft cyan skull silhouette / cranium.
+  ctx.beginPath();
+  ctx.moveTo(-0.54*s,-0.18*s);
+  ctx.bezierCurveTo(-0.58*s,-0.58*s,-0.34*s,-0.86*s,0,-0.89*s);
+  ctx.bezierCurveTo(0.34*s,-0.86*s,0.58*s,-0.58*s,0.54*s,-0.18*s);
+  ctx.bezierCurveTo(0.52*s,0.08*s,0.42*s,0.27*s,0.31*s,0.40*s);
+  ctx.lineTo(0.25*s,0.69*s);
+  ctx.lineTo(0.13*s,0.80*s);
+  ctx.lineTo(-0.13*s,0.80*s);
+  ctx.lineTo(-0.25*s,0.69*s);
+  ctx.lineTo(-0.31*s,0.40*s);
+  ctx.bezierCurveTo(-0.42*s,0.27*s,-0.52*s,0.08*s,-0.54*s,-0.18*s);
+  ctx.closePath();
+  ctx.fillStyle='rgba(190,225,245,0.08)';
+  ctx.fill();
+  ctx.lineWidth=1.5*dpr;
+  ctx.strokeStyle='rgba(100,195,255,0.9)';
+  ctx.shadowColor='rgba(73,180,255,0.75)';
+  ctx.shadowBlur=10*dpr;
+  ctx.stroke();
+
+  // Eye sockets — deliberately large and dark so it reads as a skull immediately.
+  const eye=(side)=>{
+    ctx.save();
+    ctx.translate(side*.25*s,-.16*s);
+    ctx.rotate(side*.08);
+    ctx.beginPath();
+    ctx.moveTo(-.18*s,0);
+    ctx.bezierCurveTo(-.12*s,-.13*s,.08*s,-.15*s,.18*s,-.02*s);
+    ctx.bezierCurveTo(.12*s,.14*s,-.08*s,.15*s,-.18*s,.05*s);
+    ctx.closePath();
+    ctx.fillStyle='rgba(0,2,7,0.96)';
+    ctx.shadowColor='rgba(0,0,0,0.9)';
+    ctx.shadowBlur=5*dpr;
+    ctx.fill();
+    ctx.lineWidth=1*dpr;
+    ctx.strokeStyle='rgba(73,180,255,0.72)';
+    ctx.stroke();
+    ctx.restore();
+  };
+  eye(-1); eye(1);
+
+  // Nasal cavity
+  ctx.shadowBlur=0;
+  ctx.beginPath();
+  ctx.moveTo(0,-.02*s);
+  ctx.lineTo(-.10*s,.20*s);
+  ctx.lineTo(0,.27*s);
+  ctx.lineTo(.10*s,.20*s);
+  ctx.closePath();
+  ctx.fillStyle='rgba(0,2,7,0.97)';
+  ctx.fill();
+  ctx.strokeStyle='rgba(73,180,255,0.65)';
+  ctx.stroke();
+
+  // Teeth plate
+  ctx.beginPath();
+  ctx.roundRect(-.27*s,.34*s,.54*s,.31*s,.035*s);
+  ctx.fillStyle='rgba(185,220,238,0.14)';
+  ctx.fill();
+  ctx.strokeStyle='rgba(100,195,255,0.75)';
+  ctx.stroke();
+  for(let i=1;i<8;i++){
+    const x=-.27*s+i*(.54*s/8);
+    ctx.beginPath(); ctx.moveTo(x,.36*s); ctx.lineTo(x,.64*s); ctx.stroke();
+  }
+  ctx.beginPath(); ctx.moveTo(-.26*s,.49*s); ctx.lineTo(.26*s,.49*s); ctx.stroke();
+
+  // Scan/glitch accents.
+  ctx.globalAlpha=.25+.15*Math.sin(ts/170);
+  ctx.lineWidth=.7*dpr;
+  ctx.strokeStyle='rgba(210,240,255,0.9)';
+  for(let y=-.68;y<.70;y+=.11){
+    ctx.beginPath(); ctx.moveTo(-.48*s,y*s); ctx.lineTo(.48*s,y*s); ctx.stroke();
+  }
+  ctx.restore();
+}
+
 function renderFaceFrame(ts){
   if(!faceScanActive) return;
-  if(!faceRotStart) faceRotStart = ts;
-  const angle = (ts - faceRotStart) * (Math.PI*2/4200);
-  const canvas = document.getElementById('faceCanvas');
-  if(!canvas){ faceScanActive=false; return; }
-  const ctx = canvas.getContext('2d');
-  const dpr = Math.min(window.devicePixelRatio||1, 2.5);
-  const cssW = canvas.clientWidth || 220, cssH = canvas.clientHeight || 260;
-  if(canvas.width !== Math.round(cssW*dpr)){
-    canvas.width = Math.round(cssW*dpr); canvas.height = Math.round(cssH*dpr);
+  if(!faceRotStart) faceRotStart=ts;
+  const canvas=document.getElementById('faceCanvas');
+  if(!canvas){faceScanActive=false;return;}
+  const ctx=canvas.getContext('2d');
+  const dpr=Math.min(window.devicePixelRatio||1,2.5);
+  const cssW=canvas.clientWidth||220, cssH=canvas.clientHeight||260;
+  if(canvas.width!==Math.round(cssW*dpr)){
+    canvas.width=Math.round(cssW*dpr); canvas.height=Math.round(cssH*dpr);
   }
-  const W = canvas.width, H = canvas.height;
+  const W=canvas.width,H=canvas.height;
   ctx.setTransform(1,0,0,1,0,0);
   ctx.clearRect(0,0,W,H);
-  const cosA = Math.cos(angle), sinA = Math.sin(angle);
-  const cx = W/2, cy = H*0.52;
-  const scale = Math.min(W,H)*0.47;
 
-  const projected = FACE_POINTS.map(p=>{
-    const rx = p.x*cosA + p.z*sinA;
-    const rz = -p.x*sinA + p.z*cosA;
-    const ry = p.y;
-    const persp = 2.3/(2.3 - rz*0.85);
-    return { px: cx+rx*scale*persp, py: cy-ry*scale*persp, rz, r:p.r*dpr, base:p.base };
-  });
+  drawSkull(ctx,W,H,dpr,ts);
 
-  ctx.lineWidth = 0.7*dpr;
-  for(const [i,j] of FACE_EDGES){
-    const a = projected[i], b = projected[j];
-    if(a.rz < -0.25 || b.rz < -0.25) continue;
-    const alpha = Math.max(0, Math.min(0.4, ((a.rz+b.rz)/2)*0.4 + 0.08));
-    ctx.strokeStyle = `rgba(90,190,255,${alpha})`;
-    ctx.beginPath(); ctx.moveTo(a.px,a.py); ctx.lineTo(b.px,b.py); ctx.stroke();
-  }
-
-  projected.sort((a,b)=>a.rz-b.rz);
-  for(const pt of projected){
-    if(pt.rz < -0.4) continue;
-    const depthT = (pt.rz+1)/2;
-    const alpha = 0.3 + depthT*0.7;
-    const size = pt.r*(0.6+depthT*0.85);
+  // Keep the point-cloud scan aesthetic as a subtle animated overlay.
+  const angle=(ts-faceRotStart)*(Math.PI*2/9000);
+  const cosA=Math.cos(angle),sinA=Math.sin(angle);
+  const cx=W/2,cy=H*.49,scale=Math.min(W,H)*.43;
+  for(const pt of FACE_POINTS){
+    const rx=pt.x*cosA+pt.z*sinA;
+    const rz=-pt.x*sinA+pt.z*cosA;
+    if(rz<-.35) continue;
+    const persp=1.55/(1.55-rz*.18);
+    const px=cx+rx*scale*persp, py=cy-pt.y*scale*persp;
+    const alpha=.18+((rz+1)/2)*.45;
     ctx.beginPath();
-    ctx.fillStyle = pt.base ? `rgba(130,205,255,${alpha})` : `rgba(200,232,255,${Math.min(1,alpha+0.15)})`;
-    ctx.shadowColor = 'rgba(90,190,255,0.9)';
-    ctx.shadowBlur = (pt.base ? 2 : 5)*dpr;
-    ctx.arc(pt.px, pt.py, size, 0, Math.PI*2);
+    ctx.fillStyle=`rgba(150,215,255,${alpha})`;
+    ctx.shadowColor='rgba(73,180,255,.7)';
+    ctx.shadowBlur=(pt.base?1.5:3)*dpr;
+    ctx.arc(px,py,pt.r*dpr*.7,0,Math.PI*2);
     ctx.fill();
   }
-  ctx.shadowBlur = 0;
+  ctx.shadowBlur=0;
   requestAnimationFrame(renderFaceFrame);
 }
+
 function startFaceCanvasLoop(){
   if(FACE_POINTS.length===0) buildFacePointCloud();
-  faceScanActive = true;
-  faceRotStart = null;
+  faceScanActive=true;
+  faceRotStart=null;
   requestAnimationFrame(renderFaceFrame);
 }
-function stopFaceCanvasLoop(){ faceScanActive = false; }
+function stopFaceCanvasLoop(){faceScanActive=false;}
 
 function startFaceScan(){
   document.getElementById('facescan').classList.add('show');
@@ -1436,6 +1518,26 @@ function finishFaceScan(){
     stopFaceCanvasLoop();
     runBoot();
   }, 1900);
+}
+
+/* ============ MOBILE SCROLL SAFETY ============ */
+// Never cancel vertical touch gestures on the document: Chrome needs these
+// gestures for normal page scrolling and pull-to-refresh.
+document.documentElement.style.touchAction='pan-y';
+document.body.style.touchAction='pan-y';
+document.addEventListener('touchmove',(e)=>{
+  const overlay=document.querySelector('#chatOverlay.show, #settingsOverlay.show');
+  // Overlays have their own scroll containers; the main page must remain scrollable.
+  if(!overlay) return;
+  if(e.target.closest('#chatLog, .settings-body')) return;
+}, {passive:true});
+
+// Keep the page at a sensible top position when switching tabs instead of
+// accidentally jumping because newly rendered content has a different height.
+function preserveScrollOnTabSwitch(tab){
+  const y=window.scrollY;
+  switchTab(tab);
+  requestAnimationFrame(()=>window.scrollTo({top:y,behavior:'instant'}));
 }
 
 /* ============ PWA / SERVICE WORKER ============ */
