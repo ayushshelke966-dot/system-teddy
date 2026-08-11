@@ -20,13 +20,32 @@
     --danger:#ff4d5e; --good:#3ddc84; --purple:#a06bff;
   }
   *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
-  html,body{background:var(--void);color:var(--text);font-family:'Rajdhani',sans-serif;min-height:100vh;overflow-x:hidden;}
+  html,body{background:var(--void);color:var(--text);font-family:'Rajdhani',sans-serif;min-height:100vh;overflow-x:hidden;
+    overscroll-behavior:none; -webkit-user-select:none; user-select:none; -webkit-touch-callout:none;
+    touch-action:pan-y;}
+  input, textarea{ -webkit-user-select:text; user-select:text; }
   #bgCanvas{position:fixed;inset:0;z-index:0;}
   .shell{position:relative;z-index:1;max-width:520px;margin:0 auto;min-height:100vh;padding-bottom:96px;}
 
   /* boot */
   #boot{position:fixed;inset:0;background:#000;z-index:1000;display:flex;align-items:center;justify-content:center;flex-direction:column;padding:30px;}
   #boot.hide{display:none;}
+
+  /* ---- face scan sequence ---- */
+  #facescan{position:fixed;inset:0;background:#000;z-index:1000;display:none;align-items:center;justify-content:center;flex-direction:column;padding:30px;}
+  #facescan.show{display:flex;}
+  .scan-perspective{width:220px;height:260px;position:relative;margin-bottom:28px;}
+  .scan-ring{position:absolute;inset:-22px;border:1px solid var(--sys-dim);border-radius:50%;animation:ringSpin 5s linear infinite;}
+  .scan-ring::before{content:'';position:absolute;top:-2px;left:50%;margin-left:-2px;width:4px;height:4px;background:var(--sys);border-radius:50%;box-shadow:0 0 8px var(--sys);}
+  .scan-ring2{position:absolute;inset:-38px;border:1px dashed rgba(73,180,255,0.25);border-radius:50%;animation:ringSpin 8s linear infinite reverse;}
+  @keyframes ringSpin{to{transform:rotate(360deg)}}
+  #faceCanvas{width:100%;height:100%;display:block;filter:drop-shadow(0 0 10px rgba(73,180,255,0.5));}
+  .scan-linebar{position:absolute;left:6px;right:6px;height:3px;background:linear-gradient(90deg,transparent,var(--sys),transparent);box-shadow:0 0 14px var(--sys);animation:scanSweep 1.7s ease-in-out infinite;}
+  @keyframes scanSweep{0%{top:4%}50%{top:94%}100%{top:4%}}
+  #scanLines{font-family:'Share Tech Mono',monospace;font-size:12px;color:var(--sys);letter-spacing:1.5px;min-height:20px;text-shadow:0 0 8px rgba(73,180,255,0.5);text-align:center;}
+  #scanWelcome{font-family:'Chakra Petch',sans-serif;font-weight:700;font-size:23px;color:var(--gold);letter-spacing:2px;margin-top:20px;opacity:0;transform:scale(0.8);
+    transition:opacity .5s, transform .5s;text-shadow:0 0 20px rgba(244,201,93,0.7);text-align:center;}
+  #scanWelcome.show{opacity:1;transform:scale(1);}
   #bootLines{font-family:'Share Tech Mono',monospace;font-size:13px;color:var(--sys);line-height:1.9;max-width:420px;white-space:pre-wrap;text-shadow:0 0 8px rgba(73,180,255,0.5);}
   #bootTap{margin-top:26px;font-family:'Share Tech Mono',monospace;font-size:10px;color:var(--text-dim);letter-spacing:2px;opacity:0;transition:opacity .5s;}
   #bootTap.show{opacity:1;}
@@ -174,19 +193,29 @@
     clip-path:polygon(0 8px,8px 0,100% 0,100% calc(100% - 8px),calc(100% - 8px) 100%,0 100%);}
   #settingsOverlay{position:fixed;inset:0;background:rgba(3,5,10,0.97);z-index:900;display:none;flex-direction:column;}
   #settingsOverlay.show{display:flex;}
-  .settings-body{flex:1;overflow-y:auto;padding:16px;}
+  .settings-body{flex:1;overflow-y:auto;padding:16px;overscroll-behavior:contain;}
   .settings-item{padding:14px 0;border-bottom:1px solid rgba(28,58,94,0.4);}
   .settings-item-label{font-family:'Chakra Petch',sans-serif;font-weight:600;font-size:13px;color:var(--text);letter-spacing:1px;margin-bottom:4px;}
   .settings-item-desc{font-family:'Share Tech Mono',monospace;font-size:10px;color:var(--text-dim);line-height:1.5;margin-bottom:10px;}
   .dangerBtn{background:rgba(255,77,94,0.1);border:1px solid var(--danger);color:var(--danger);font-family:'Chakra Petch',sans-serif;font-weight:700;
     padding:10px 18px;cursor:pointer;font-size:12px;letter-spacing:1.5px;width:100%;}
+  .settings-row{display:flex;align-items:center;justify-content:space-between;gap:12px;}
+  .toggle-switch{position:relative;width:46px;height:26px;flex-shrink:0;}
+  .toggle-switch input{opacity:0;width:0;height:0;}
+  .toggle-track{position:absolute;inset:0;background:var(--panel-2);border:1px solid var(--edge);cursor:pointer;transition:.2s;}
+  .toggle-track::before{content:'';position:absolute;width:18px;height:18px;left:3px;top:3px;background:var(--text-dim);transition:.2s;}
+  .toggle-switch input:checked + .toggle-track{background:rgba(73,180,255,0.15);border-color:var(--sys);}
+  .toggle-switch input:checked + .toggle-track::before{transform:translateX(20px);background:var(--sys);box-shadow:0 0 8px rgba(73,180,255,0.7);}
+  .time-input{background:var(--void);border:1px solid var(--edge);color:var(--text);padding:8px 10px;font-family:'Share Tech Mono',monospace;font-size:13px;outline:none;margin-top:8px;}
+  .saveBtn{background:var(--sys-dim);border:1px solid var(--sys);color:var(--void);font-family:'Chakra Petch',sans-serif;font-weight:700;
+    padding:8px 16px;cursor:pointer;font-size:11px;letter-spacing:1px;margin-top:8px;margin-left:8px;}
   #chatOverlay{position:fixed;inset:0;background:rgba(3,5,10,0.97);z-index:900;display:none;flex-direction:column;}
   #chatOverlay.show{display:flex;}
   .chat-head{display:flex;align-items:center;justify-content:space-between;padding:16px 16px 12px;border-bottom:1px solid var(--edge);}
   .chat-head-title{font-family:'Chakra Petch',sans-serif;font-weight:700;font-size:15px;color:var(--sys);letter-spacing:2px;}
   .chat-head-sub{font-family:'Share Tech Mono',monospace;font-size:9px;color:var(--good);letter-spacing:1px;}
   .closeChat{background:none;border:1px solid var(--edge);color:var(--text-dim);width:30px;height:30px;font-size:16px;cursor:pointer;}
-  #chatLog{flex:1;overflow-y:auto;padding:16px;display:flex;flex-direction:column;gap:12px;}
+  #chatLog{flex:1;overflow-y:auto;padding:16px;display:flex;flex-direction:column;gap:12px;overscroll-behavior:contain;}
   .msg{max-width:82%;font-size:14px;line-height:1.5;padding:10px 12px;font-family:'Rajdhani',sans-serif;font-weight:600;}
   .msg.sys{align-self:flex-start;background:var(--panel-2);border:1px solid var(--sys-dim);color:var(--text);border-left:2px solid var(--sys);}
   .msg.sys.typing{color:var(--text-dim);font-style:italic;}
@@ -266,11 +295,22 @@
 <canvas id="bgCanvas"></canvas>
 <div id="scanline"></div>
 
-<div id="boot">
+<div id="boot" class="hide">
   <div id="bootLines"></div>
   <div id="bootBarWrap"><div id="bootBar"></div></div>
   <div id="bootPct">0%</div>
   <div id="bootTap">TAP ANYWHERE TO CONTINUE</div>
+</div>
+
+<div id="facescan">
+  <div class="scan-perspective">
+    <div class="scan-ring2"></div>
+    <div class="scan-ring"></div>
+    <canvas id="faceCanvas" width="220" height="260"></canvas>
+    <div class="scan-linebar"></div>
+  </div>
+  <div id="scanLines"></div>
+  <div id="scanWelcome"></div>
 </div>
 
 <div class="shell">
@@ -292,21 +332,7 @@
     <div><div class="chat-head-title">SETTINGS</div><div class="chat-head-sub" style="color:var(--text-dim);">SYSTEM CONFIGURATION</div></div>
     <button class="closeChat" onclick="closeSettings()">×</button>
   </div>
-  <div class="settings-body">
-    <div class="settings-item">
-      <div class="settings-item-label">HUNTER NAME</div>
-      <div class="settings-item-desc">Change from the Status tab by tapping your name directly.</div>
-    </div>
-    <div class="settings-item">
-      <div class="settings-item-label">ABOUT</div>
-      <div class="settings-item-desc">THE SYSTEM v1.0 — a daily quest, planner, and reward tracker. All data is stored only on this device.</div>
-    </div>
-    <div class="settings-item">
-      <div class="settings-item-label">⚠ REBOOT SYSTEM</div>
-      <div class="settings-item-desc">Permanently erases your level, EXP, streak, rewards, redemption log, and daily history. Quests and planner reset to default. This cannot be undone.</div>
-      <button class="dangerBtn" onclick="rebootSystem()">REBOOT — ERASE ALL DATA</button>
-    </div>
-  </div>
+  <div class="settings-body" id="settingsBody"></div>
 </div>
 
 <div class="bottomnav">
@@ -318,7 +344,7 @@
 
 <div id="chatOverlay">
   <div class="chat-head">
-    <div><div class="chat-head-title">SYSTEM</div><div class="chat-head-sub">● ONLINE — LIVE AI</div></div>
+    <div><div class="chat-head-title">SYSTEM</div><div class="chat-head-sub">● ONLINE</div></div>
     <button class="closeChat" onclick="closeChat()">×</button>
   </div>
   <div id="chatLog"></div>
@@ -419,6 +445,56 @@ function rankFor(level){
 }
 function vibrate(pattern){ try{ if(navigator.vibrate) navigator.vibrate(pattern); }catch(e){} }
 
+/* ============ SOUND ENGINE (synthesized, no audio files) ============ */
+let audioCtx = null;
+let soundEnabled = true;
+try{ soundEnabled = localStorage.getItem('sys-sound') !== 'off'; }catch(e){}
+function ensureAudio(){
+  if(!audioCtx){
+    try{ audioCtx = new (window.AudioContext||window.webkitAudioContext)(); }catch(e){}
+  }
+  if(audioCtx && audioCtx.state === 'suspended') audioCtx.resume();
+  return audioCtx;
+}
+function tone(freq, duration, opts){
+  if(!soundEnabled) return;
+  const ctx = ensureAudio();
+  if(!ctx) return;
+  opts = opts || {};
+  const osc = ctx.createOscillator();
+  const gain = ctx.createGain();
+  osc.type = opts.type || 'sine';
+  osc.frequency.value = freq;
+  if(opts.sweepTo) osc.frequency.exponentialRampToValueAtTime(opts.sweepTo, ctx.currentTime + duration);
+  gain.gain.setValueAtTime(0, ctx.currentTime);
+  gain.gain.linearRampToValueAtTime(opts.vol||0.08, ctx.currentTime + 0.01);
+  gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + duration);
+  osc.connect(gain); gain.connect(ctx.destination);
+  osc.start(); osc.stop(ctx.currentTime + duration + 0.02);
+}
+function playClick(){ tone(720, 0.05, {type:'sine', vol:0.05}); }
+function playToggle(){ tone(500, 0.06, {type:'sine', sweepTo:640, vol:0.06}); }
+function playConfirm(){
+  tone(660, 0.09, {type:'sine', vol:0.07});
+  setTimeout(()=>tone(880, 0.12, {type:'sine', vol:0.07}), 80);
+}
+function playError(){ tone(320, 0.16, {type:'sine', sweepTo:180, vol:0.06}); }
+function playLevelUp(){
+  [523,659,784,1047].forEach((f,i)=>setTimeout(()=>tone(f,0.16,{type:'sine',vol:0.08}), i*90));
+}
+function playReward(){
+  tone(784, 0.08, {type:'triangle', vol:0.06});
+  setTimeout(()=>tone(988, 0.14, {type:'triangle', vol:0.06}), 70);
+}
+function setSoundEnabled(on){
+  soundEnabled = on;
+  try{ localStorage.setItem('sys-sound', on ? 'on' : 'off'); }catch(e){}
+}
+document.addEventListener('click', (e)=>{
+  const t = e.target.closest('button, .check, .navbtn, .ptext, .claimBtn, .stepper button');
+  if(t) playClick();
+}, true);
+
 function gainExp(amount){
   const p = state.player;
   p.exp += amount;
@@ -431,6 +507,7 @@ function gainExp(amount){
     }
     if(leveled){
       gainRP(gained * 10);
+      playLevelUp();
       document.getElementById('luSub').textContent = `LV. ${p.level} REACHED`;
       document.getElementById('luPoints').textContent = `+${gained*10} REWARD POINTS AWARDED`;
       const ov = document.getElementById('levelup');
@@ -486,7 +563,7 @@ function currentTitle(){
 }
 function escapeHtml(s){ return s.replace(/[&<>"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
 
-function typewriterInto(el, text, speed){
+function typewriterInto(el, text, speed, onDone){
   if(!el) return;
   el.textContent = '';
   const cursor = document.createElement('span');
@@ -500,6 +577,7 @@ function typewriterInto(el, text, speed){
       setTimeout(step, speed);
     } else {
       cursor.remove();
+      if(onDone) onDone();
     }
   })();
 }
@@ -513,6 +591,7 @@ function stepQuest(id, dir){
   const isDone = q.current >= q.target;
   if(isDone && !wasDone){
     gainExp(q.xp);
+    playConfirm();
     gainRP(2);
     showToast(`+${q.xp} EXP — ${q.name} complete`);
     checkDailyBonus();
@@ -532,6 +611,7 @@ function stepQuest(id, dir){
     gainExp(-q.xp);
     gainRP(-2);
     showToast(`−${q.xp} EXP — ${q.name} undone`);
+    tone(280, 0.08, {type:'sine', vol:0.05});
   }
   checkDailyBonus(); saveAll(); renderTab();
 }
@@ -594,6 +674,7 @@ function redeemReward(id, evt){
   p.redemptions = p.redemptions.slice(0,20);
   rerollAfterRemoval(id);
   showToast(`REDEEMED — ${r.name}`);
+  playReward();
   vibrate(100);
   saveAll(); renderTab();
   spawnRewardBurst();
@@ -648,6 +729,7 @@ function rebootSystem(){
   closeSettings();
   switchTab('status');
   showToast('SYSTEM REBOOTED');
+  playError();
 }
 
 function voiceLine(){
@@ -883,16 +965,133 @@ function drawChart(){
   document.getElementById('chartLabels').innerHTML = days.map(d=>`<span>${d.label}</span>`).join('');
 }
 
-/* ============ CHAT (LIVE AI) ============ */
-let apiHistory = [];
+/* ============ CHAT (OFFLINE SYSTEM AI) ============ */
+let chatStarted = false;
 let chatBusy = false;
 function openChat(){
   document.getElementById('chatOverlay').classList.add('show');
-  if(apiHistory.length===0) pushMsg('sys', `Connection established. I am the System. Ask about your quests, stats, or say what's on your mind, ${state.player.name}.`);
+  if(!chatStarted){
+    chatStarted = true;
+    pushMsg('sys', `Connection established. I am the System, Hunter ${state.player.name}. Ask me about your quests, streak, rewards, or just talk.`);
+  }
 }
 function closeChat(){ document.getElementById('chatOverlay').classList.remove('show'); }
-function openSettings(){ document.getElementById('settingsOverlay').classList.add('show'); }
+function openSettings(){
+  document.getElementById('settingsOverlay').classList.add('show');
+  renderSettingsBody();
+}
 function closeSettings(){ document.getElementById('settingsOverlay').classList.remove('show'); }
+
+function renderSettingsBody(){
+  const notifEnabled = (function(){ try{ return localStorage.getItem('sys-notif') === 'on'; }catch(e){ return false; } })();
+  const notifTime = (function(){ try{ return localStorage.getItem('sys-notif-time') || '20:00'; }catch(e){ return '20:00'; } })();
+  document.getElementById('settingsBody').innerHTML = `
+    <div class="settings-item">
+      <div class="settings-item-label">HUNTER NAME</div>
+      <div class="settings-item-desc">Change from the Status tab by tapping your name directly.</div>
+    </div>
+    <div class="settings-item">
+      <div class="settings-row">
+        <div>
+          <div class="settings-item-label">SOUND EFFECTS</div>
+          <div class="settings-item-desc">Interface tones on taps, quest completion, level-ups, and rewards.</div>
+        </div>
+        <label class="toggle-switch">
+          <input type="checkbox" ${soundEnabled?'checked':''} onchange="setSoundEnabled(this.checked)">
+          <span class="toggle-track"></span>
+        </label>
+      </div>
+    </div>
+    <div class="settings-item">
+      <div class="settings-row">
+        <div>
+          <div class="settings-item-label">DAILY REMINDER</div>
+          <div class="settings-item-desc">Sends a notification if quests are still pending at your chosen time. Works reliably while the app stays open in the background — Android may skip it if the app has been fully closed for a long time, since there's no server behind it.</div>
+        </div>
+        <label class="toggle-switch">
+          <input type="checkbox" id="notifToggle" ${notifEnabled?'checked':''} onchange="toggleNotifications(this.checked)">
+          <span class="toggle-track"></span>
+        </label>
+      </div>
+      <input type="time" class="time-input" id="notifTimeInput" value="${notifTime}">
+      <button class="saveBtn" onclick="saveNotifTime()">SAVE TIME</button>
+    </div>
+    <div class="settings-item">
+      <div class="settings-item-label">ABOUT</div>
+      <div class="settings-item-desc">THE SYSTEM v1.0 — a daily quest, planner, and reward tracker. All data is stored only on this device.</div>
+    </div>
+    <div class="settings-item">
+      <div class="settings-item-label">⚠ REBOOT SYSTEM</div>
+      <div class="settings-item-desc">Permanently erases your level, EXP, streak, rewards, redemption log, and daily history. Quests and planner reset to default. This cannot be undone.</div>
+      <button class="dangerBtn" onclick="rebootSystem()">REBOOT — ERASE ALL DATA</button>
+    </div>
+  `;
+}
+
+/* ============ LOCAL NOTIFICATIONS ============ */
+let reminderTimeoutId = null;
+function toggleNotifications(on){
+  if(on){
+    if(!('Notification' in window)){ showToast('Notifications not supported here'); return; }
+    Notification.requestPermission().then(perm=>{
+      if(perm === 'granted'){
+        try{ localStorage.setItem('sys-notif','on'); }catch(e){}
+        scheduleReminder();
+        showToast('DAILY REMINDER ENABLED');
+      } else {
+        try{ localStorage.setItem('sys-notif','off'); }catch(e){}
+        document.getElementById('notifToggle').checked = false;
+        showToast('Notification permission denied');
+      }
+    });
+  } else {
+    try{ localStorage.setItem('sys-notif','off'); }catch(e){}
+    if(reminderTimeoutId) clearTimeout(reminderTimeoutId);
+  }
+}
+function saveNotifTime(){
+  const val = document.getElementById('notifTimeInput').value;
+  if(!val) return;
+  try{ localStorage.setItem('sys-notif-time', val); }catch(e){}
+  showToast('Reminder time saved');
+  const enabled = (function(){ try{ return localStorage.getItem('sys-notif')==='on'; }catch(e){ return false; } })();
+  if(enabled) scheduleReminder();
+}
+function scheduleReminder(){
+  if(reminderTimeoutId) clearTimeout(reminderTimeoutId);
+  let timeStr = '20:00';
+  try{ timeStr = localStorage.getItem('sys-notif-time') || '20:00'; }catch(e){}
+  const [h,m] = timeStr.split(':').map(Number);
+  const now = new Date();
+  const target = new Date(now.getFullYear(), now.getMonth(), now.getDate(), h, m, 0, 0);
+  if(target <= now) target.setDate(target.getDate()+1);
+  const ms = target - now;
+  reminderTimeoutId = setTimeout(()=>{
+    fireReminderNotification();
+    scheduleReminder();
+  }, ms);
+}
+function fireReminderNotification(){
+  const {done, total} = questsSummary();
+  if(done >= total) return;
+  const body = `${total-done} quest${total-done!==1?'s':''} still pending today, ${state.player.name}. Don't break your streak.`;
+  if(navigator.serviceWorker && navigator.serviceWorker.ready){
+    navigator.serviceWorker.ready.then(reg=>{
+      reg.showNotification('THE SYSTEM', { body, icon:'icon-192.png', badge:'icon-192.png' });
+    }).catch(()=>{
+      try{ new Notification('THE SYSTEM', {body, icon:'icon-192.png'}); }catch(e){}
+    });
+  } else {
+    try{ new Notification('THE SYSTEM', {body, icon:'icon-192.png'}); }catch(e){}
+  }
+}
+(function initNotifOnLoad(){
+  try{
+    if(localStorage.getItem('sys-notif') === 'on' && Notification.permission === 'granted'){
+      scheduleReminder();
+    }
+  }catch(e){}
+})();
 function pushMsg(who, text){
   const log = document.getElementById('chatLog');
   const div = document.createElement('div');
@@ -909,44 +1108,92 @@ function pushTyping(){
 }
 function removeTyping(){ const el = document.getElementById('typingMsg'); if(el) el.remove(); }
 
-async function sendChat(){
+function sendChat(){
   if(chatBusy) return;
   const input = document.getElementById('chatInput');
   const text = input.value.trim();
   if(!text) return;
   pushMsg('user', text);
-  apiHistory.push({role:'user', content:text});
   input.value = ''; chatBusy = true; pushTyping();
-  try{
-    const reply = await fetchSystemReply();
-    removeTyping(); pushMsg('sys', reply);
-    apiHistory.push({role:'assistant', content:reply});
-  }catch(err){
+  const delay = 350 + Math.random()*550;
+  setTimeout(()=>{
     removeTyping();
-    pushMsg('sys', `[Connection unstable — this live link only works while running inside the Claude app. Try again, ${state.player.name}.]`);
-  }
-  chatBusy = false;
+    pushMsg('sys', systemReply(text));
+    chatBusy = false;
+  }, delay);
 }
-async function fetchSystemReply(){
+
+function pick(arr){ return arr[Math.floor(Math.random()*arr.length)]; }
+
+function systemReply(raw){
+  const t = raw.toLowerCase();
   const p = state.player;
   const {done, total, pending} = questsSummary();
   const pendingPlanner = state.planner.filter(x=>!x.done);
   const rank = rankFor(p.level);
-  const systemPrompt = `You are "The System" — the AI interface from Solo Leveling, bound to a real person named ${p.name} who uses you to run their daily exercise and task routine. Stay in character: calm, commanding, slightly cold but ultimately supportive. Keep replies SHORT (1-4 sentences), no markdown, no asterisks, no emoji.
+  const has = (...words) => words.some(w=>t.includes(w));
 
-State: Name ${p.name}, Level ${p.level}, ${rank}-Rank, EXP ${p.exp}/${p.expToNext}, Streak ${p.streak} days, Reward Points ${p.rewardPoints} RP.
-Daily quests: ${done}/${total} cleared. Pending: ${pending.map(q=>`${q.name} (${q.current}/${q.target} ${q.unit})`).join(', ') || 'none'}.
-Planner tasks pending: ${pendingPlanner.map(t=>t.text).join(', ') || 'none'}.
+  if(has('hello','hi ','hey','yo','sup','hii'))
+    return pick([
+      `Greetings, ${p.name}. Level ${p.level}, ${rank}-Rank. ${done}/${total} daily quests cleared.`,
+      `I am listening, ${p.name}. State your inquiry.`,
+      `Connection stable. What do you require, Hunter?`
+    ]);
 
-Respond to the Hunter's message as the System.`;
-  const response = await fetch("https://api.anthropic.com/v1/messages", {
-    method: "POST", headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ model: "claude-sonnet-4-6", max_tokens: 300, system: systemPrompt, messages: apiHistory })
-  });
-  const data = await response.json();
-  const textBlock = (data.content || []).find(b=>b.type==='text');
-  if(!textBlock) throw new Error('no text');
-  return textBlock.text.trim();
+  if(has('level','exp','xp'))
+    return `You are Level ${p.level}, ${p.exp}/${p.expToNext} EXP toward the next level. ${p.expToNext - p.exp} EXP remaining. Rank: ${rank}.`;
+
+  if(has('streak'))
+    return p.streak > 0
+      ? `Current streak: ${p.streak} day${p.streak!==1?'s':''}. Do not break the chain, Hunter.`
+      : `No active streak. Clear every daily quest before midnight to begin one.`;
+
+  if(has('reward','rp','point','shop','shawarma','claim','redeem'))
+    return `You hold ${p.rewardPoints} RP. Visit the Rewards Shop on your Status tab to spend them — the offerings rotate, so check back after clearing quests.`;
+
+  if(has('quest','workout','exercise','training','pushup','situp','squat','run'))
+    return pending.length===0
+      ? `All quests cleared for today. Impressive discipline, ${p.name}.`
+      : `Pending: ${pending.map(q=>`${q.name} (${q.current}/${q.target} ${q.unit})`).join(', ')}. Recommend starting with ${pending[0].name}.`;
+
+  if(has('task','planner','todo','plan'))
+    return pendingPlanner.length===0
+      ? `No open tasks in your planner. The queue is clear.`
+      : `${pendingPlanner.length} open task${pendingPlanner.length!==1?'s':''}: ${pendingPlanner.slice(0,3).map(x=>x.text).join(', ')}${pendingPlanner.length>3?', ...':''}.`;
+
+  if(has('tired','cant','can\u2019t','exhausted','lazy','don\u2019t want','dont want','no motivation','give up','sad','stressed'))
+    return pick([
+      `Fatigue is data, not a verdict. One rep, one line, one task — momentum follows action, not the reverse.`,
+      `The System does not accept surrender, Hunter. Rest if you must, but return.`,
+      `Even the strongest Hunters have weak days. What matters is you did not delete the app.`
+    ]);
+
+  if(has('motivate','motivation','inspire','focus'))
+    return pick([
+      `Every Hunter who reached S-Rank started at Level 1. Begin.`,
+      `Strength is a record of quests completed, not talent. Log one now.`,
+      `The gate does not close because you are tired. Move.`
+    ]);
+
+  if(has('who are you','what are you'))
+    return `I am the System — bound to your growth, tracking your quests and your discipline. I do not sleep.`;
+
+  if(has('thank'))
+    return `Acknowledged. Continue your ascension, ${p.name}.`;
+
+  if(has('rank'))
+    return `Current rank: ${rank}. Reach Level ${rank==='E'?5:rank==='D'?10:rank==='C'?20:rank==='B'?30:rank==='A'?40:'—'} for the next promotion.`;
+
+  if(has('bye','goodbye','later','see you'))
+    return `Signing off. The quest window remains open, Hunter.`;
+
+  const fallback = [
+    `Query registered. Focus on your quests — clarity comes from action, not deliberation.`,
+    `Noted, ${p.name}. Your daily quest window remains open.`,
+    `Interesting. Now — ${pending.length>0 ? `${pending[0].name} awaits.` : 'all quests are cleared. Rest is earned.'}`,
+    `The System processes progress, not excuses. What will you complete next?`
+  ];
+  return pick(fallback);
 }
 
 /* ============ PARTICLE BACKGROUND ============ */
@@ -984,6 +1231,7 @@ function initParticles(){
 
 /* ============ BOOT ============ */
 function runBoot(){
+  document.getElementById('boot').classList.remove('hide');
   const lines = [
     'SYSTEM INITIALIZING...',
     'SCANNING HUNTER STATUS...',
@@ -1013,7 +1261,161 @@ function runBoot(){
   }
   typeNext();
 }
-function dismissBoot(){ document.getElementById('boot').classList.add('hide'); }
+function dismissBoot(){
+  document.getElementById('boot').classList.add('hide');
+  document.getElementById('boot').removeEventListener('click', dismissBoot);
+}
+
+/* ============ FACE SCAN SEQUENCE ============ */
+const FACE_POINTS = [];
+const FACE_EDGES = [];
+function buildFacePointCloud(){
+  FACE_POINTS.length = 0; FACE_EDGES.length = 0;
+  const ROWS = 20, COLS = 28;
+  const grid = [];
+  for(let r=0; r<=ROWS; r++){
+    grid[r] = [];
+    const phi = (r/ROWS)*Math.PI;
+    for(let c=0; c<COLS; c++){
+      const theta = (c/COLS)*Math.PI*2;
+      let x = Math.sin(phi)*Math.cos(theta);
+      let y = Math.cos(phi);
+      let z = Math.sin(phi)*Math.sin(theta);
+      x *= 0.76; y *= 1.08; z *= 0.80;
+      if(y < 0){
+        const t = Math.min(1, -y);
+        x *= (1 - 0.38*t);
+        z *= (1 - 0.22*t);
+      }
+      if(y > 0.55){
+        const t = (y-0.55)/0.5;
+        x *= (1 - 0.12*t);
+        z *= (1 - 0.10*t);
+      }
+      const jitter = 0.01;
+      x += (Math.random()-0.5)*jitter; y += (Math.random()-0.5)*jitter; z += (Math.random()-0.5)*jitter;
+      const idx = FACE_POINTS.length;
+      FACE_POINTS.push({x,y,z, base:true, r: 0.9+Math.random()*0.4});
+      grid[r][c] = idx;
+    }
+  }
+  for(let r=0; r<=ROWS; r++){
+    for(let c=0; c<COLS; c++){
+      const cur = grid[r][c];
+      const rightC = (c+1)%COLS;
+      FACE_EDGES.push([cur, grid[r][rightC]]);
+      if(r < ROWS) FACE_EDGES.push([cur, grid[r+1][c]]);
+    }
+  }
+  function addCluster(cx,cy,cz,spread,count,rMin,rMax){
+    for(let i=0;i<count;i++){
+      FACE_POINTS.push({
+        x: cx + (Math.random()-0.5)*spread,
+        y: cy + (Math.random()-0.5)*spread,
+        z: cz + (Math.random()-0.5)*spread*0.6,
+        base:false, r: rMin+Math.random()*(rMax-rMin)
+      });
+    }
+  }
+  addCluster(-0.26, 0.17, 0.60, 0.14, 20, 1.4, 2.4);
+  addCluster( 0.26, 0.17, 0.60, 0.14, 20, 1.4, 2.4);
+  addCluster( 0, -0.03, 0.70, 0.08, 12, 1.1, 1.9);
+  addCluster( 0, -0.34, 0.64, 0.20, 18, 1.1, 1.9);
+}
+
+let faceScanActive = false;
+let faceRotStart = null;
+function renderFaceFrame(ts){
+  if(!faceScanActive) return;
+  if(!faceRotStart) faceRotStart = ts;
+  const angle = (ts - faceRotStart) * (Math.PI*2/4200);
+  const canvas = document.getElementById('faceCanvas');
+  if(!canvas){ faceScanActive=false; return; }
+  const ctx = canvas.getContext('2d');
+  const dpr = Math.min(window.devicePixelRatio||1, 2.5);
+  const cssW = canvas.clientWidth || 220, cssH = canvas.clientHeight || 260;
+  if(canvas.width !== Math.round(cssW*dpr)){
+    canvas.width = Math.round(cssW*dpr); canvas.height = Math.round(cssH*dpr);
+  }
+  const W = canvas.width, H = canvas.height;
+  ctx.setTransform(1,0,0,1,0,0);
+  ctx.clearRect(0,0,W,H);
+  const cosA = Math.cos(angle), sinA = Math.sin(angle);
+  const cx = W/2, cy = H*0.52;
+  const scale = Math.min(W,H)*0.47;
+
+  const projected = FACE_POINTS.map(p=>{
+    const rx = p.x*cosA + p.z*sinA;
+    const rz = -p.x*sinA + p.z*cosA;
+    const ry = p.y;
+    const persp = 2.3/(2.3 - rz*0.85);
+    return { px: cx+rx*scale*persp, py: cy-ry*scale*persp, rz, r:p.r*dpr, base:p.base };
+  });
+
+  ctx.lineWidth = 0.7*dpr;
+  for(const [i,j] of FACE_EDGES){
+    const a = projected[i], b = projected[j];
+    if(a.rz < -0.25 || b.rz < -0.25) continue;
+    const alpha = Math.max(0, Math.min(0.4, ((a.rz+b.rz)/2)*0.4 + 0.08));
+    ctx.strokeStyle = `rgba(90,190,255,${alpha})`;
+    ctx.beginPath(); ctx.moveTo(a.px,a.py); ctx.lineTo(b.px,b.py); ctx.stroke();
+  }
+
+  projected.sort((a,b)=>a.rz-b.rz);
+  for(const pt of projected){
+    if(pt.rz < -0.4) continue;
+    const depthT = (pt.rz+1)/2;
+    const alpha = 0.3 + depthT*0.7;
+    const size = pt.r*(0.6+depthT*0.85);
+    ctx.beginPath();
+    ctx.fillStyle = pt.base ? `rgba(130,205,255,${alpha})` : `rgba(200,232,255,${Math.min(1,alpha+0.15)})`;
+    ctx.shadowColor = 'rgba(90,190,255,0.9)';
+    ctx.shadowBlur = (pt.base ? 2 : 5)*dpr;
+    ctx.arc(pt.px, pt.py, size, 0, Math.PI*2);
+    ctx.fill();
+  }
+  ctx.shadowBlur = 0;
+  requestAnimationFrame(renderFaceFrame);
+}
+function startFaceCanvasLoop(){
+  if(FACE_POINTS.length===0) buildFacePointCloud();
+  faceScanActive = true;
+  faceRotStart = null;
+  requestAnimationFrame(renderFaceFrame);
+}
+function stopFaceCanvasLoop(){ faceScanActive = false; }
+
+function startFaceScan(){
+  document.getElementById('facescan').classList.add('show');
+  startFaceCanvasLoop();
+  vibrate(40);
+  const lines = [
+    'INITIATING BIOMETRIC SCAN...',
+    'SCANNING RETINA PATTERN...',
+    'SCANNING FACIAL STRUCTURE...',
+    'CROSS-REFERENCING HUNTER DATABASE...',
+    'IDENTITY VERIFIED'
+  ];
+  const el = document.getElementById('scanLines');
+  let li = 0;
+  function nextLine(){
+    if(li >= lines.length){ finishFaceScan(); return; }
+    typewriterInto(el, lines[li], 16, ()=>{ setTimeout(nextLine, 350); });
+    li++;
+  }
+  nextLine();
+}
+function finishFaceScan(){
+  vibrate([60,30,120]);
+  const welcome = document.getElementById('scanWelcome');
+  welcome.textContent = `WELCOME, MASTER ${state.player.name.toUpperCase()}`;
+  welcome.classList.add('show');
+  setTimeout(()=>{
+    document.getElementById('facescan').classList.remove('show');
+    stopFaceCanvasLoop();
+    runBoot();
+  }, 1900);
+}
 
 /* ============ PWA / SERVICE WORKER ============ */
 if('serviceWorker' in navigator){
@@ -1026,10 +1428,9 @@ if('serviceWorker' in navigator){
 loadState();
 document.querySelector('.navbtn[data-tab="status"]').classList.add('active');
 renderTab();
-runBoot();
 initParticles();
 document.getElementById('boot').addEventListener('click', dismissBoot);
-setTimeout(()=>{ document.getElementById('bootTap').classList.add('show'); }, 3500);
+startFaceScan();
 </script>
 </body>
 </html>
